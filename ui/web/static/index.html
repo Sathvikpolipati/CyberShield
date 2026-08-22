@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberShield SOC - Network Traffic Analyzer & Threat Defense</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #e2e8f0; margin: 0; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px; }
+    .title { font-size: 24px; font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 10px; }
+    .status-badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .status-badge.online { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+    .status-badge.offline { background: #7f1d1d; color: #f87171; border: 1px solid #dc2626; }
+    .grid-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .card { background: #131c2e; border: 1px solid #1e293b; border-radius: 8px; padding: 18px; }
+    .card-title { font-size: 12px; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; }
+    .card-val { font-size: 26px; font-weight: bold; color: #f8fafc; }
+    .layout-split { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .table-container { background: #131c2e; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { background: #1e293b; color: #94a3b8; padding: 12px; }
+    td { padding: 10px 12px; border-bottom: 1px solid #1e293b; }
+    .proto-badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .proto-badge.https { background: #854d0e; color: #fef08a; }
+    .proto-badge.tcp { background: #075985; color: #bae6fd; }
+    .proto-badge.dns { background: #14532d; color: #bbf7d0; }
+    .proto-badge.udp { background: #1e1b4b; color: #c7d2fe; }
+    .alert-card { background: #27171e; border-left: 4px solid #ef4444; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+    .alert-title { font-weight: bold; color: #f87171; font-size: 14px; }
+    .alert-desc { font-size: 12px; color: #cbd5e1; margin-top: 4px; }
+    .alert-endpoints { font-size: 11px; color: #94a3b8; margin-top: 6px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">🛡️ CyberShield SOC Traffic Analyzer & Defense</div>
+    <div id="ws-status" class="status-badge offline">CONNECTING...</div>
+  </div>
+
+  <div class="grid-metrics">
+    <div class="card"><div class="card-title">Packets Captured</div><div class="card-val" id="metric-pkts">0</div></div>
+    <div class="card"><div class="card-title">Bandwidth Volume</div><div class="card-val" id="metric-bw">0 KB</div></div>
+    <div class="card"><div class="card-title">Threat Alerts</div><div class="card-val" id="metric-alerts" style="color: #34d399;">NOMINAL</div></div>
+    <div class="card"><div class="card-title">Defense Shield</div><div class="card-val" style="color: #38bdf8;">ACTIVE</div></div>
+  </div>
+
+  <div class="layout-split">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Proto</th>
+            <th>Source Endpoint</th>
+            <th>Target Endpoint</th>
+            <th>Bytes</th>
+            <th>Summary Info</th>
+          </tr>
+        </thead>
+        <tbody id="packet-tbody">
+          <tr><td colspan="6" style="text-align: center; color: #64748b;">Listening for live network frames...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div style="font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f87171;">🚨 Security Threat Alerts</div>
+      <div id="alerts-container">
+        <div class="card" style="text-align: center; color: #34d399;">✓ No active threat anomalies detected. Perimeter secure.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
