@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
+    --primary: 188 100% 45%;
+    --primary-foreground: 222 47% 4%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 188 100% 50%;
+    --accent-foreground: 222 47% 4%;
+    --border: 217 33% 18%;
+    --network-bg: 222 47% 4%;
+  }
+}
+
+body {
+  background-color: #050811;
+  color: #f1f5f9;
+  overflow-x: hidden;
+}
+
+/* Custom glowing borders & gradients */
+.cyber-glow {
+  box-shadow: 0 0 25px rgba(0, 220, 255, 0.2), inset 0 0 15px rgba(0, 220, 255, 0.05);
+}
+
+.cyber-card {
+  background: rgba(13, 20, 38, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 220, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cyber-card:hover {
+  border-color: rgba(0, 220, 255, 0.4);
+  box-shadow: 0 10px 30px -10px rgba(0, 220, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
