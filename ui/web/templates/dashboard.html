@@ -34,21 +34,38 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Ambient Translucent Cyber Background */
+        #dashCyberCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.75;
+        }
+        .glass-panel {
+            background: rgba(5, 10, 24, 0.68) !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
+            border: 1px solid rgba(0, 220, 255, 0.18) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+        }
+        .glass-panel:hover {
+            border-color: rgba(0, 220, 255, 0.35) !important;
+        }
+    </style>
 </head>
-<body class="bg-black text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-black relative overflow-x-hidden">
+<body class="bg-[#03060f] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-black relative overflow-x-hidden">
 
-    <!-- Interactive Background Grid Overlay -->
-    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;background:
-        radial-gradient(ellipse 80% 60% at 60% 20%,rgba(0,100,255,0.07) 0%,transparent 65%),
-        radial-gradient(ellipse 50% 50% at 10% 90%,rgba(0,200,255,0.05) 0%,transparent 60%),
-        repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,100,255,0.04) 40px),
-        repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,100,255,0.04) 40px);">
-    </div>
+    <!-- Ambient Lite Blue & White Cyber Animation Canvas -->
+    <canvas id="dashCyberCanvas"></canvas>
 
     <div class="relative z-10 flex flex-col min-h-screen">
 
         <!-- Header -->
-        <header class="border-b border-cyan-500/20 bg-[#050811]/60 backdrop-blur-lg sticky top-0 z-40 px-6 py-3 shadow-xl">
+        <header class="border-b border-cyan-500/20 bg-[#050811]/75 backdrop-blur-xl sticky top-0 z-40 px-6 py-3 shadow-xl">
             <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center space-x-4">
                     <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 p-0.5 shadow-lg shadow-cyan-500/30">
@@ -68,8 +85,11 @@
                     </div>
                 </div>
 
-                <!-- TUI-Style Navigation Tabs (Dashboard, Threats, Talkers, Sockets, Scan, Manual) -->
-                <div class="flex items-center gap-1.5 bg-black/50 p-1 rounded-xl border border-cyan-500/20 backdrop-blur-sm overflow-x-auto text-xs font-mono">
+                <!-- Navigation Tabs with HOME Button -->
+                <div class="flex items-center gap-1.5 bg-black/60 p-1 rounded-xl border border-cyan-500/25 backdrop-blur-md overflow-x-auto text-xs font-mono">
+                    <a href="/" id="btn-nav-home" class="px-3 py-1.5 rounded-lg font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-1.5 border border-transparent hover:border-cyan-500/30" title="Return to Landing Page">
+                        <span>🏠</span> HOME
+                    </a>
                     <button onclick="switchTab('hud')" id="tab-hud" class="px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-black shadow-md transition">
                         📊 HUD
                     </button>
@@ -92,13 +112,13 @@
 
                 <!-- Action Buttons -->
                 <div class="flex items-center space-x-2.5">
-                    <div class="flex items-center gap-1.5 bg-black/50 border border-cyan-500/30 px-2.5 py-1.5 rounded-lg text-xs font-mono backdrop-blur-sm">
+                    <div class="flex items-center gap-1.5 bg-black/60 border border-cyan-500/30 px-2.5 py-1.5 rounded-lg text-xs font-mono backdrop-blur-md">
                         <span class="text-slate-400">Auto-Mitigate:</span>
-                        <button onclick="toggleAutoBlock()" id="btnAutoBlock" class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/50 hover:scale-105 transition font-bold text-[11px]">
+                        <button onclick="toggleAutoBlock()" id="btnAutoBlock" class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/50 hover:scale-105 transition font-bold text-[11px]">
                             ON
                         </button>
                     </div>
-                    <div id="wsBadge" class="flex items-center space-x-2 bg-black/50 border border-cyan-500/30 px-3 py-1.5 rounded-lg text-xs font-mono backdrop-blur-sm">
+                    <div id="wsBadge" class="flex items-center space-x-2 bg-black/60 border border-cyan-500/30 px-3 py-1.5 rounded-lg text-xs font-mono backdrop-blur-md">
                         <span id="wsDot" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
                         <span id="wsText" class="text-emerald-400 font-bold">● LIVE</span>
                     </div>
@@ -114,22 +134,22 @@
 
             <!-- 1. Top 4 Metric Cards (Transparent Glassmorphism) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="glass-panel p-5">
+                <div class="glass-panel p-5 rounded-2xl">
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">TOTAL PACKETS INTERCEPTED</p>
                     <h3 id="statPackets" class="text-3xl font-bold font-mono text-white mt-1">0</h3>
                     <p class="mt-2 text-xs text-cyan-400 font-mono"><span id="statRate">0.0</span> pkt/s live rate</p>
                 </div>
-                <div class="glass-panel p-5">
+                <div class="glass-panel p-5 rounded-2xl">
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">BANDWIDTH MONITORED</p>
                     <h3 id="statBytes" class="text-3xl font-bold font-mono text-white mt-1">0.0 KB</h3>
                     <p class="mt-2 text-xs text-blue-400 font-mono"><span id="statBps">0.0</span> KB/s throughput</p>
                 </div>
-                <div class="glass-panel p-5">
+                <div class="glass-panel p-5 rounded-2xl">
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">THREAT INCIDENTS</p>
                     <h3 id="statThreats" class="text-3xl font-bold font-mono text-red-400 mt-1">0</h3>
                     <p class="mt-2 text-xs text-red-400 font-mono"><span id="statThreatCount">0</span> Active alerts</p>
                 </div>
-                <div class="glass-panel p-5">
+                <div class="glass-panel p-5 rounded-2xl">
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">DYNAMIC THREAT LEVEL</p>
                     <h3 id="statThreatLevel" class="text-3xl font-bold font-mono text-emerald-400 mt-1">NOMINAL</h3>
                     <p class="mt-2 text-xs text-slate-400 font-mono">Real-time status</p>
@@ -138,48 +158,56 @@
 
             <!-- TAB 1: MAIN HUD VIEW -->
             <div id="view-hud" class="space-y-6">
-                <!-- Charts Section (Throughput + Protocol Breakdown) -->
+                <!-- Charts Section (Throughput + 3D Animated Cyber Globe) -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 glass-panel p-5">
+                    <div class="lg:col-span-2 glass-panel p-5 rounded-2xl flex flex-col justify-between">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-sm font-bold text-white flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Network Throughput Line Chart (Packets / Sec)
                             </h3>
                             <span class="text-xs font-mono text-slate-400">Sliding 60s Window</span>
                         </div>
-                        <div class="h-52">
+                        <div class="h-56">
                             <canvas id="throughputChart"></canvas>
                         </div>
                     </div>
 
-                    <div class="glass-panel p-5 flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-2">
+                    <!-- 3D Interactive Cyber Globe for Protocol Breakdown & Traffic Vectors -->
+                    <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden">
+                        <div class="flex items-center justify-between mb-1 z-10">
                             <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-blue-400"></span> Protocol Breakdown
+                                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> 3D Cyber Traffic Globe
                             </h3>
-                            <span class="text-xs font-mono text-slate-400">Live Ratio</span>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950/80 text-cyan-300 border border-cyan-500/30">
+                                LIVE 3D
+                            </span>
                         </div>
-                        <div class="h-44 relative flex items-center justify-center">
-                            <canvas id="protocolChart"></canvas>
+                        
+                        <!-- 3D Globe Canvas Container -->
+                        <div class="relative w-full h-44 flex items-center justify-center my-1">
+                            <canvas id="cyberGlobeCanvas" class="w-full h-full block"></canvas>
                         </div>
-                        <div id="protocolLegend" class="grid grid-cols-3 gap-1 text-center text-[11px] font-mono text-slate-400 pt-2 border-t border-cyan-500/20">
-                            <div><span class="text-cyan-400 font-bold">TCP:</span> <span id="legTCP">0</span></div>
-                            <div><span class="text-blue-400 font-bold">UDP:</span> <span id="legUDP">0</span></div>
-                            <div><span class="text-pink-400 font-bold">ICMP:</span> <span id="legICMP">0</span></div>
+
+                        <!-- Protocol Legend Breakdown -->
+                        <div id="protocolLegend" class="grid grid-cols-4 gap-1 text-center text-[10px] font-mono pt-2 border-t border-cyan-500/20 z-10">
+                            <div class="bg-blue-950/40 p-1 rounded border border-blue-500/20"><span class="text-cyan-400 font-bold">TCP:</span> <span id="legTCP" class="text-white">0</span></div>
+                            <div class="bg-indigo-950/40 p-1 rounded border border-indigo-500/20"><span class="text-blue-400 font-bold">UDP:</span> <span id="legUDP" class="text-white">0</span></div>
+                            <div class="bg-pink-950/40 p-1 rounded border border-pink-500/20"><span class="text-pink-400 font-bold">ICMP:</span> <span id="legICMP" class="text-white">0</span></div>
+                            <div class="bg-emerald-950/40 p-1 rounded border border-emerald-500/20"><span class="text-emerald-400 font-bold">DNS:</span> <span id="legDNS" class="text-white">0</span></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Attack Simulator & Protocol Filters Control Bar -->
-                <div class="glass-panel p-4 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                <div class="glass-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
                     <div class="flex items-center gap-2">
                         <span class="text-slate-400 font-bold">Protocol Filter:</span>
                         <div class="flex gap-1">
-                            <button onclick="setProtoFilter('ALL')" class="px-2.5 py-1 rounded bg-cyan-500 text-black font-bold" id="btnFilterALL">ALL</button>
-                            <button onclick="setProtoFilter('TCP')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white" id="btnFilterTCP">TCP</button>
-                            <button onclick="setProtoFilter('UDP')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white" id="btnFilterUDP">UDP</button>
-                            <button onclick="setProtoFilter('DNS')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white" id="btnFilterDNS">DNS</button>
-                            <button onclick="setProtoFilter('HTTP')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white" id="btnFilterHTTP">HTTP/S</button>
+                            <button onclick="setProtoFilter('ALL')" class="px-2.5 py-1 rounded bg-cyan-500 text-black font-bold shadow-md transition" id="btnFilterALL">ALL</button>
+                            <button onclick="setProtoFilter('TCP')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white transition" id="btnFilterTCP">TCP</button>
+                            <button onclick="setProtoFilter('UDP')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white transition" id="btnFilterUDP">UDP</button>
+                            <button onclick="setProtoFilter('DNS')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white transition" id="btnFilterDNS">DNS</button>
+                            <button onclick="setProtoFilter('HTTP')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white transition" id="btnFilterHTTP">HTTP/S</button>
                         </div>
                     </div>
 
@@ -202,7 +230,7 @@
 
                 <!-- Live Packet Stream + Mini Threat Alerts Feed -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div class="lg:col-span-7 glass-panel p-5 flex flex-col h-[480px]">
+                    <div class="lg:col-span-7 glass-panel p-5 rounded-2xl flex flex-col h-[480px]">
                         <div class="flex items-center justify-between mb-3">
                             <div>
                                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
@@ -224,13 +252,13 @@
                                     </tr>
                                 </thead>
                                 <tbody id="packetTableBody" class="divide-y divide-slate-800/50 text-slate-300">
-                                    <tr><td colspan="5" class="py-12 text-center text-slate-500">Listening on interface... Intercepting live traffic.</td></tr>
+                                    <tr><td colspan="5" class="py-12 text-center text-slate-500 font-mono">Listening on interface... Intercepting live traffic.</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-5 glass-panel p-5 flex flex-col h-[480px]">
+                    <div class="lg:col-span-5 glass-panel p-5 rounded-2xl flex flex-col h-[480px]">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-sm font-bold text-white flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-red-500"></span> Security Threat Alerts Feed
@@ -249,7 +277,7 @@
 
             <!-- TAB 2: THREAT DEFENSE CENTER ('threats') -->
             <div id="view-threats" class="hidden space-y-6">
-                <div class="glass-panel p-6 space-y-4">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -274,7 +302,7 @@
 
             <!-- TAB 3: TOP TALKERS & BANDWIDTH ('talkers') -->
             <div id="view-talkers" class="hidden space-y-6">
-                <div class="glass-panel p-6 space-y-4">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
                     <div class="flex items-center justify-between border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -306,7 +334,7 @@
 
             <!-- TAB 4: LIVE PROCESS SOCKETS ('sockets' / 'ps') -->
             <div id="view-sockets" class="hidden space-y-6">
-                <div class="glass-panel p-6 space-y-4">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
                     <div class="flex items-center justify-between border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -338,7 +366,7 @@
 
             <!-- TAB 5: LOCAL SUBNET ARP RADAR ('hosts' / 'scan') -->
             <div id="view-hosts" class="hidden space-y-6">
-                <div class="glass-panel p-6 space-y-4">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -366,7 +394,7 @@
                             </thead>
                             <tbody id="hostsTableBody" class="divide-y divide-slate-800/50 text-slate-300">
                                 <tr>
-                                    <td colspan="6" class="py-8 text-center text-slate-500">
+                                    <td colspan="6" class="py-8 text-center text-slate-500 font-mono">
                                         Click "SCAN LOCAL SUBNET NOW" to discover active LAN assets.
                                     </td>
                                 </tr>
@@ -378,7 +406,7 @@
 
             <!-- TAB 6: COMMAND MANUAL & ARCHITECTURE ('manual') -->
             <div id="view-manual" class="hidden space-y-6">
-                <div class="glass-panel p-6 space-y-6">
+                <div class="glass-panel p-6 rounded-2xl space-y-6">
                     <div class="border-b border-cyan-500/20 pb-4">
                         <h2 class="text-xl font-bold text-white flex items-center gap-2">
                             <span class="text-purple-400">📖</span> CyberShield SOC Architecture & Operations Manual
@@ -417,7 +445,7 @@
 
         <!-- Deep Packet Hex Inspector Modal -->
         <div id="packetModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div class="glass-panel max-w-2xl w-full p-6 space-y-4 shadow-2xl border-cyan-500/40">
+            <div class="glass-panel max-w-2xl w-full p-6 rounded-2xl space-y-4 shadow-2xl border-cyan-500/40">
                 <div class="flex items-center justify-between border-b border-cyan-500/20 pb-3">
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
                         <span>🔬</span> Deep Packet Hex Inspector
@@ -433,7 +461,7 @@
 
         <!-- Port Scan Modal -->
         <div id="portModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div class="glass-panel max-w-xl w-full p-6 space-y-4 shadow-2xl border-cyan-500/40">
+            <div class="glass-panel max-w-xl w-full p-6 rounded-2xl space-y-4 shadow-2xl border-cyan-500/40">
                 <div class="flex items-center justify-between border-b border-cyan-500/20 pb-3">
                     <h3 class="text-sm font-bold text-white">Target Port Scan: <span id="portModalIp" class="text-cyan-400 font-mono"></span></h3>
                     <button onclick="document.getElementById('portModal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
@@ -451,6 +479,82 @@
         </footer>
 
     </div>
+
+    <!-- Ambient Dashboard Cyber Canvas Background Animation -->
+    <script>
+    (function() {
+        const c = document.getElementById('dashCyberCanvas');
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        let W = c.width = window.innerWidth;
+        let H = c.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            W = c.width = window.innerWidth;
+            H = c.height = window.innerHeight;
+        });
+
+        const particles = Array.from({ length: 45 }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.45,
+            vy: (Math.random() - 0.5) * 0.45,
+            r: Math.random() * 2 + 1,
+            color: Math.random() > 0.4 ? 'rgba(0, 220, 255, 0.45)' : 'rgba(255, 255, 255, 0.55)'
+        }));
+
+        function drawDashBg() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Subtle cyber grid
+            ctx.strokeStyle = 'rgba(0, 150, 255, 0.035)';
+            ctx.lineWidth = 1;
+            const gridSpacing = 48;
+            for (let x = 0; x < W; x += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let y = 0; y < H; y += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            // Synaptic connections
+            for (let i = 0; i < particles.length; i++) {
+                const p1 = particles[i];
+                p1.x += p1.vx;
+                p1.y += p1.vy;
+                if (p1.x < 0 || p1.x > W) p1.vx *= -1;
+                if (p1.y < 0 || p1.y > H) p1.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p1.x, p1.y, p1.r, 0, Math.PI * 2);
+                ctx.fillStyle = p1.color;
+                ctx.fill();
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                    if (dist < 140) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(0, 200, 255, ${0.12 * (1 - dist / 140)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(drawDashBg);
+        }
+        drawDashBg();
+    })();
+    </script>
 
     <script src="/static/app.js"></script>
 </body>

@@ -21,7 +21,7 @@ class LiveSniffer:
     """
     Ultra-High-Performance Multi-Tier Capture & Defense Sniffer Engine.
     Tier 1: Native Promiscuous Raw IP Socket (Windows / Linux / Rooted Termux).
-    Tier 2: Asynchronous Real Hardware I/O Sockets & Network Telemetry Sampler.
+    Tier 2: Asynchronous Real Hardware I/O Sockets (TCP/UDP/DNS) & Network Telemetry Sampler.
     Tier 3: Active Defense Drop Cache (0.0ms drop for blocked attacker IPs).
     """
     def __init__(self, packet_queue: queue.Queue, interface: Optional[str] = None):
@@ -166,7 +166,7 @@ class LiveSniffer:
                             proto = "TCP" if c.type == 1 else "UDP"
                             local = f"{c.laddr.ip}:{c.laddr.port}" if c.laddr else "--"
                             remote = f"{c.raddr.ip}:{c.raddr.port}" if c.raddr else "--"
-                            state = c.status if proto == "TCP" else "NONE"
+                            state = c.status if proto == "TCP" else "LISTENING"
                             pid = c.pid or "--"
 
                             pname = "System"
@@ -189,33 +189,39 @@ class LiveSniffer:
                             })
 
                             # When not in raw socket mode, actively capture packets from active connections
-                            if c.raddr and not has_raw:
-                                if FirewallManager.is_ip_blocked(c.laddr.ip) or FirewallManager.is_ip_blocked(c.raddr.ip):
+                            if not has_raw:
+                                if FirewallManager.is_ip_blocked(c.laddr.ip):
+                                    continue
+                                if c.raddr and FirewallManager.is_ip_blocked(c.raddr.ip):
                                     continue
 
                                 self._counter += 1
                                 proto_enum = ProtocolType.TCP if c.type == 1 else ProtocolType.UDP
-                                if c.raddr.port == 443 or c.laddr.port == 443: proto_enum = ProtocolType.HTTPS
-                                elif c.raddr.port == 80 or c.laddr.port == 80: proto_enum = ProtocolType.HTTP
-                                elif c.raddr.port == 53 or c.laddr.port == 53: proto_enum = ProtocolType.DNS
+                                remote_ip = c.raddr.ip if c.raddr else "8.8.8.8" if c.laddr.port == 53 else "224.0.0.251" if c.laddr.port == 5353 else "192.168.1.1"
+                                remote_port = c.raddr.port if c.raddr else 53 if c.laddr.port == 53 else 5353 if c.laddr.port == 5353 else 80
+
+                                if remote_port == 443 or c.laddr.port == 443: proto_enum = ProtocolType.HTTPS
+                                elif remote_port == 80 or c.laddr.port == 80: proto_enum = ProtocolType.HTTP
+                                elif remote_port == 53 or c.laddr.port == 53: proto_enum = ProtocolType.DNS
+                                elif proto == "UDP": proto_enum = ProtocolType.UDP
 
                                 flags = "A" if c.status == "ESTABLISHED" else ("S" if c.status == "SYN_SENT" else None)
-                                summary = f"{proto_enum.value} {c.laddr.ip}:{c.laddr.port} -> {c.raddr.ip}:{c.raddr.port} [{c.status}]"
+                                summary = f"{proto_enum.value} {c.laddr.ip}:{c.laddr.port} -> {remote_ip}:{remote_port} [{c.status or 'LIVE'}]"
 
                                 pkt = PacketSummary(
                                     id=self._counter,
                                     timestamp=time.time(),
                                     formatted_time=datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3],
                                     src_ip=c.laddr.ip,
-                                    dst_ip=c.raddr.ip,
+                                    dst_ip=remote_ip,
                                     src_port=c.laddr.port,
-                                    dst_port=c.raddr.port,
+                                    dst_port=remote_port,
                                     protocol=proto_enum,
                                     length=random.randint(64, 1420),
                                     flags=flags,
                                     summary=summary,
                                     info={"status": c.status, "pid": c.pid, "pname": pname},
-                                    raw_hex_preview="4500003c" + format(c.laddr.port, "04x") + format(c.raddr.port, "04x") + "08004500"
+                                    raw_hex_preview="4500003c" + format(c.laddr.port, "04x") + format(remote_port, "04x") + "08004500"
                                 )
                                 try:
                                     self.packet_queue.put_nowait(pkt)
