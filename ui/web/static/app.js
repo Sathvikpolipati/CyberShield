@@ -1,3 +1,4 @@
+// CyberShield Live SOC Dashboard v2.5
 let packetsCache = [];
 let alertsCache = [];
 let hostsCache = [];
@@ -11,63 +12,76 @@ let currentFilter = 'ALL';
 let currentTab = 'hud';
 
 // Initialize Chart.js Throughput Line Chart
-const ctxThroughput = document.getElementById('throughputChart').getContext('2d');
-const throughputChart = new Chart(ctxThroughput, {
-    type: 'line',
-    data: {
-        labels: new Array(60).fill(''),
-        datasets: [{
-            label: 'Packets/sec',
-            data: throughputData,
-            borderColor: '#00dcff',
-            backgroundColor: 'rgba(0, 220, 255, 0.12)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.35,
-            pointRadius: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 0 },
-        scales: {
-            x: { display: false },
-            y: {
-                grid: { color: 'rgba(0, 220, 255, 0.08)' },
-                ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } },
-                beginAtZero: true
-            }
+const ctxThroughput = document.getElementById('throughputChart')?.getContext('2d');
+let throughputChart = null;
+if (ctxThroughput) {
+    throughputChart = new Chart(ctxThroughput, {
+        type: 'line',
+        data: {
+            labels: new Array(60).fill(''),
+            datasets: [{
+                label: 'Packets/sec',
+                data: throughputData,
+                borderColor: '#1d6dff',
+                backgroundColor: 'rgba(29, 109, 255, 0.12)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 0
+            }]
         },
-        plugins: { legend: { display: false } }
-    }
-});
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 0 },
+            scales: {
+                x: { display: false },
+                y: {
+                    grid: { color: 'rgba(29, 109, 255, 0.08)' },
+                    ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } },
+                    beginAtZero: true
+                }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
 
 // Initialize Protocol Donut Chart
-const ctxProtocol = document.getElementById('protocolChart').getContext('2d');
-const protocolChart = new Chart(ctxProtocol, {
-    type: 'doughnut',
-    data: {
-        labels: ['TCP', 'UDP', 'ICMP', 'DNS', 'HTTP', 'HTTPS', 'Other'],
-        datasets: [{
-            data: [1, 1, 1, 1, 1, 1, 1],
-            backgroundColor: ['#00dcff', '#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#eab308', '#64748b'],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 0 },
-        plugins: { legend: { display: false } },
-        cutout: '72%'
-    }
-});
+const ctxProtocol = document.getElementById('protocolChart')?.getContext('2d');
+let protocolChart = null;
+if (ctxProtocol) {
+    protocolChart = new Chart(ctxProtocol, {
+        type: 'doughnut',
+        data: {
+            labels: ['TCP', 'UDP', 'ICMP', 'DNS', 'HTTP', 'HTTPS', 'Other'],
+            datasets: [{
+                data: [1, 1, 1, 1, 1, 1, 1],
+                backgroundColor: ['#1d6dff', '#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#eab308', '#64748b'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 0 },
+            plugins: { legend: { display: false } },
+            cutout: '72%'
+        }
+    });
+}
 
-// Switch Tabs (HUD, Threats, Talkers, Sockets, Hosts, Manual)
-function switchTab(tabName) {
+// Switch Tabs (HUD, Threats, Talkers, Sockets, Hosts/Scan, Manual)
+async function switchTab(tabName) {
+    if (tabName === 'scan') tabName = 'hosts';
+    if (tabName === 'ps') tabName = 'sockets';
     currentTab = tabName;
-    ['hud', 'threats', 'talkers', 'sockets', 'hosts', 'manual'].forEach(t => {
+
+    // Update URL hash without jumping page
+    history.replaceState(null, null, `#${tabName}`);
+
+    const tabs = ['hud', 'threats', 'talkers', 'sockets', 'hosts', 'manual'];
+    tabs.forEach(t => {
         const viewEl = document.getElementById(`view-${t}`);
         const tabEl = document.getElementById(`tab-${t}`);
         if (viewEl) {
@@ -76,17 +90,50 @@ function switchTab(tabName) {
         }
         if (tabEl) {
             if (t === tabName) {
-                tabEl.className = 'px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-black shadow-md transition';
+                tabEl.className = 'px-3 py-1.5 rounded-lg font-bold bg-blue-600 text-white shadow-md transition';
             } else {
-                tabEl.className = 'px-3 py-1.5 rounded-lg font-bold text-slate-300 hover:bg-slate-800/80 transition';
+                tabEl.className = 'px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white hover:bg-slate-800/80 transition';
             }
         }
     });
 
-    if (tabName === 'threats') renderFullThreats();
-    else if (tabName === 'talkers') renderTalkers();
-    else if (tabName === 'sockets') renderFullSockets();
-    else if (tabName === 'hosts') renderHosts();
+    // Immediate Data Fetch and Render for Sub-Modules
+    if (tabName === 'threats') {
+        if (alertsCache.length === 0) {
+            try {
+                const r = await fetch('/api/alerts');
+                alertsCache = await r.json();
+            } catch(e) {}
+        }
+        renderFullThreats();
+    } else if (tabName === 'talkers') {
+        if (talkersCache.length === 0) {
+            try {
+                const r = await fetch('/api/talkers');
+                talkersCache = await r.json();
+            } catch(e) {}
+        }
+        renderTalkers();
+    } else if (tabName === 'sockets') {
+        if (socketsCache.length === 0) {
+            try {
+                const r = await fetch('/api/sockets');
+                socketsCache = await r.json();
+            } catch(e) {}
+        }
+        renderFullSockets();
+    } else if (tabName === 'hosts') {
+        if (hostsCache.length === 0) {
+            try {
+                const r = await fetch('/api/hosts');
+                hostsCache = await r.json();
+            } catch(e) {}
+        }
+        renderHosts();
+    } else if (tabName === 'hud') {
+        renderPackets();
+        renderAlerts();
+    }
 }
 
 // Connect WebSocket with Automatic Recovery
@@ -118,18 +165,18 @@ function connectWebSocket() {
                 blockedIpsCache = data.blocked_ips || [];
                 renderPackets();
                 renderAlerts();
-                renderFullThreats();
-                renderTalkers();
-                renderHosts();
-                renderFullSockets();
+                if (currentTab === 'threats') renderFullThreats();
+                if (currentTab === 'talkers') renderTalkers();
+                if (currentTab === 'hosts') renderHosts();
+                if (currentTab === 'sockets') renderFullSockets();
                 if (data.stats) updateMetrics(data.stats, data.threat_level || 'NOMINAL');
-                if (data.throughput) {
+                if (data.throughput && throughputChart) {
                     throughputChart.data.datasets[0].data = data.throughput;
                     throughputChart.update();
                 }
             } else if (data.type === 'tick') {
                 if (data.stats) updateMetrics(data.stats, data.threat_level);
-                if (data.throughput) {
+                if (data.throughput && throughputChart) {
                     throughputChart.data.datasets[0].data = data.throughput;
                     throughputChart.update();
                 }
@@ -169,7 +216,7 @@ function connectWebSocket() {
     };
 }
 
-// Fallback background polling every 2s
+// Fallback background polling every 2.5s
 setInterval(async () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
@@ -183,7 +230,7 @@ setInterval(async () => {
             const a = await altsRes.json();
 
             updateMetrics(s, s.threat_level);
-            if (s.throughput) {
+            if (s.throughput && throughputChart) {
                 throughputChart.data.datasets[0].data = s.throughput;
                 throughputChart.update();
             }
@@ -199,16 +246,22 @@ setInterval(async () => {
             }
         } catch (e) {}
     }
-}, 2000);
+}, 2500);
 
 function updateMetrics(s, threatLevel) {
     if (!s) return;
-    document.getElementById('statPackets').textContent = (s.total_packets || 0).toLocaleString();
-    document.getElementById('statBytes').textContent = `${((s.total_bytes || 0) / 1024).toFixed(1)} KB`;
-    document.getElementById('statRate').textContent = s.packets_per_sec || 0;
-    document.getElementById('statBps').textContent = ((s.bytes_per_sec || 0) / 1024).toFixed(1);
-    document.getElementById('statThreats').textContent = s.active_threats || s.threat_count || 0;
-    document.getElementById('statThreatCount').textContent = s.alert_count || s.threat_count || 0;
+    const pElem = document.getElementById('statPackets');
+    if (pElem) pElem.textContent = (s.total_packets || 0).toLocaleString();
+    const bElem = document.getElementById('statBytes');
+    if (bElem) bElem.textContent = `${((s.total_bytes || 0) / 1024).toFixed(1)} KB`;
+    const rElem = document.getElementById('statRate');
+    if (rElem) rElem.textContent = s.packets_per_sec || 0;
+    const bpsElem = document.getElementById('statBps');
+    if (bpsElem) bpsElem.textContent = ((s.bytes_per_sec || 0) / 1024).toFixed(1);
+    const thElem = document.getElementById('statThreats');
+    if (thElem) thElem.textContent = s.active_threats || s.threat_count || 0;
+    const tcElem = document.getElementById('statThreatCount');
+    if (tcElem) tcElem.textContent = s.alert_count || s.threat_count || 0;
 
     const navBadge = document.getElementById('navThreatBadge');
     if (navBadge) navBadge.textContent = s.active_threats || s.threat_count || 0;
@@ -243,7 +296,7 @@ function updateProtocols(p) {
     if (legI) legI.textContent = icmp;
 
     const total = tcp + udp + icmp + dns + http + https + other;
-    if (total > 0) {
+    if (total > 0 && protocolChart) {
         protocolChart.data.datasets[0].data = [tcp, udp, icmp, dns, http, https, other];
         protocolChart.update();
     }
@@ -254,7 +307,7 @@ function setProtoFilter(proto) {
     ['ALL', 'TCP', 'UDP', 'DNS', 'HTTP'].forEach(p => {
         const btn = document.getElementById(`btnFilter${p}`);
         if (btn) {
-            if (p === proto) btn.className = 'px-2.5 py-1 rounded bg-cyan-500 text-black font-bold';
+            if (p === proto) btn.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold';
             else btn.className = 'px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white';
         }
     });
@@ -292,8 +345,8 @@ function renderPackets() {
     }
 
     tbody.innerHTML = filtered.slice(0, 35).map((pkt, idx) => {
-        let protoClass = 'bg-cyan-950/80 text-cyan-400 border border-cyan-500/40';
-        if (pkt.protocol === 'UDP') protoClass = 'bg-blue-950/80 text-blue-400 border border-blue-500/40';
+        let protoClass = 'bg-blue-950/80 text-blue-400 border border-blue-500/40';
+        if (pkt.protocol === 'UDP') protoClass = 'bg-indigo-950/80 text-indigo-400 border border-indigo-500/40';
         else if (pkt.protocol === 'ICMP') protoClass = 'bg-pink-950/80 text-pink-400 border border-pink-500/40';
         else if (pkt.protocol === 'DNS') protoClass = 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40';
         else if (pkt.protocol === 'HTTP' || pkt.protocol === 'HTTPS') protoClass = 'bg-amber-950/80 text-amber-400 border border-amber-500/40';
@@ -303,7 +356,7 @@ function renderPackets() {
         const dst = `${pkt.dst_ip}${pkt.dst_port ? ':' + pkt.dst_port : ''}`;
 
         return `
-            <tr onclick="openPacketModal(${idx})" class="hover:bg-cyan-950/40 cursor-pointer transition border-b border-slate-800/40">
+            <tr onclick="openPacketModal(${idx})" class="hover:bg-blue-950/40 cursor-pointer transition border-b border-slate-800/40">
                 <td class="py-2 px-3 text-slate-400 text-[11px]">${timeStr}</td>
                 <td class="py-2 px-2"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${protoClass}">${pkt.protocol}</span></td>
                 <td class="py-2 px-3 text-slate-200">${src} &rarr; ${dst}</td>
@@ -317,10 +370,8 @@ function renderPackets() {
 function renderAlerts() {
     const container = document.getElementById('alertContainer');
     const noMsg = document.getElementById('noAlertsMsg');
-    const badge = document.getElementById('alertBadge');
-    if (badge) badge.textContent = `${alertsCache.length} EVENTS`;
-
     if (!container) return;
+
     if (alertsCache.length === 0) {
         if (noMsg) noMsg.classList.remove('hidden');
         return;
@@ -405,21 +456,21 @@ function renderTalkers() {
     tbody.innerHTML = talkersCache.map((t, idx) => {
         const isBlocked = blockedIpsCache.includes(t.ip);
         return `
-            <tr class="hover:bg-cyan-950/40 transition border-b border-slate-800/40 font-mono">
-                <td class="py-3 px-4 text-cyan-400 font-bold">#${idx + 1}</td>
+            <tr class="hover:bg-blue-950/40 transition border-b border-slate-800/40 font-mono">
+                <td class="py-3 px-4 text-blue-400 font-bold">#${idx + 1}</td>
                 <td class="py-3 px-4 text-white font-bold">${t.ip}</td>
                 <td class="py-3 px-4 text-slate-300">${t.packets.toLocaleString()}</td>
                 <td class="py-3 px-4 text-cyan-300">${t.formatted_bytes}</td>
                 <td class="py-3 px-4">
                     <div class="flex items-center gap-2">
                         <div class="w-24 bg-slate-800 rounded-full h-2 overflow-hidden">
-                            <div class="bg-cyan-400 h-2 rounded-full" style="width: ${Math.min(t.percent, 100)}%"></div>
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${Math.min(t.percent, 100)}%"></div>
                         </div>
                         <span class="text-xs text-slate-400">${t.percent}%</span>
                     </div>
                 </td>
                 <td class="py-3 px-4 text-right">
-                    <button onclick="scanHostPorts('${t.ip}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-600 text-cyan-200 text-xs mr-2 transition">Scan Ports</button>
+                    <button onclick="scanHostPorts('${t.ip}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-blue-600 text-white text-xs mr-2 transition">Scan Ports</button>
                     ${isBlocked
                         ? `<button onclick="unblockIP('${t.ip}')" class="px-2.5 py-1 rounded bg-emerald-950 border border-emerald-500/50 text-emerald-400 text-xs font-bold transition">Unblock</button>`
                         : `<button onclick="blockIP('${t.ip}')" class="px-2.5 py-1 rounded bg-red-950 border border-red-500/40 text-red-300 hover:bg-red-900 text-xs font-bold transition">Block</button>`
@@ -439,8 +490,8 @@ function renderFullSockets() {
     }
 
     tbody.innerHTML = socketsCache.map(s => `
-        <tr class="hover:bg-cyan-950/40 transition border-b border-slate-800/40">
-            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.proto === 'TCP' ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/40' : 'bg-blue-950 text-blue-400 border border-blue-500/40'}">${s.proto}</span></td>
+        <tr class="hover:bg-blue-950/40 transition border-b border-slate-800/40 font-mono">
+            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.proto === 'TCP' ? 'bg-blue-950 text-blue-400 border border-blue-500/40' : 'bg-indigo-950 text-indigo-400 border border-indigo-500/40'}">${s.proto}</span></td>
             <td class="py-3 px-4 font-semibold text-white">${s.pname}</td>
             <td class="py-3 px-4 text-slate-400 font-mono">${s.pid}</td>
             <td class="py-3 px-4 text-cyan-300 font-mono">${s.local}</td>
@@ -454,19 +505,19 @@ function renderHosts() {
     const tbody = document.getElementById('hostsTableBody');
     if (!tbody) return;
     if (hostsCache.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No LAN devices found yet. Click "SCAN LOCAL SUBNET NOW".</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-mono">No LAN devices found yet. Click "SCAN LOCAL SUBNET NOW".</td></tr>`;
         return;
     }
 
     tbody.innerHTML = hostsCache.map(h => `
-        <tr class="hover:bg-cyan-950/40 transition border-b border-slate-800/40">
+        <tr class="hover:bg-blue-950/40 transition border-b border-slate-800/40 font-mono">
             <td class="py-3 px-4 font-bold text-cyan-400">${h.ip}</td>
             <td class="py-3 px-4 text-white">${h.hostname || 'Host'}</td>
             <td class="py-3 px-4 text-slate-400 font-mono">${h.mac || 'Unknown'}</td>
             <td class="py-3 px-4 text-slate-300">${h.vendor || 'OEM / Network Device'}</td>
             <td class="py-3 px-4 text-slate-400">${(h.last_seen || '').toString().slice(11,19) || 'Just now'}</td>
             <td class="py-3 px-4 text-right">
-                <button onclick="scanHostPorts('${h.ip}')" class="px-3 py-1 rounded bg-slate-800 hover:bg-cyan-600 text-cyan-200 text-xs font-mono transition">
+                <button onclick="scanHostPorts('${h.ip}')" class="px-3 py-1 rounded bg-slate-800 hover:bg-blue-600 text-white text-xs font-mono transition">
                     Scan Ports
                 </button>
             </td>
@@ -476,12 +527,11 @@ function renderHosts() {
 
 async function blockIP(ip) {
     try {
-        const res = await fetch('/api/firewall/block', {
+        await fetch('/api/firewall/block', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip: ip, reason: 'Manual web ban' })
         });
-        const data = await res.json();
         if (!blockedIpsCache.includes(ip)) blockedIpsCache.push(ip);
         renderAlerts();
         renderFullThreats();
@@ -493,12 +543,11 @@ async function blockIP(ip) {
 
 async function unblockIP(ip) {
     try {
-        const res = await fetch('/api/firewall/unblock', {
+        await fetch('/api/firewall/unblock', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip: ip })
         });
-        const data = await res.json();
         blockedIpsCache = blockedIpsCache.filter(x => x !== ip);
         renderAlerts();
         renderFullThreats();
@@ -544,8 +593,8 @@ async function simulateAttack(type) {
 async function scanLocalSubnet() {
     const btn = document.getElementById('btnSubnetScan');
     const spin = document.getElementById('scanSpin');
-    btn.disabled = true;
-    spin.classList.remove('hidden');
+    if (btn) btn.disabled = true;
+    if (spin) spin.classList.remove('hidden');
 
     try {
         const res = await fetch('/api/real/scan-subnet', {
@@ -559,8 +608,8 @@ async function scanLocalSubnet() {
     } catch (e) {
         console.error(e);
     } finally {
-        btn.disabled = false;
-        spin.classList.add('hidden');
+        if (btn) btn.disabled = false;
+        if (spin) spin.classList.add('hidden');
     }
 }
 
@@ -582,7 +631,7 @@ async function scanHostPorts(ip) {
         }
 
         const portList = (data.open_ports || []).map(p => `
-            <div class="p-2.5 rounded bg-black/50 border border-cyan-500/30 flex items-center justify-between">
+            <div class="p-2.5 rounded bg-black/50 border border-blue-500/30 flex items-center justify-between">
                 <div>
                     <span class="text-cyan-400 font-bold">Port ${p.port}</span> (${p.service})
                     <div class="text-[10px] text-slate-400">${p.description}</div>
@@ -592,7 +641,7 @@ async function scanHostPorts(ip) {
         `).join('');
 
         document.getElementById('portModalBody').innerHTML = `
-            <div class="p-3 rounded bg-black/60 border border-cyan-500/40 mb-3">
+            <div class="p-3 rounded bg-black/60 border border-blue-500/40 mb-3">
                 <p class="font-bold text-white">Security Score: <span class="text-cyan-400">${data.risk_score}/100</span></p>
                 <p class="text-xs text-slate-300 mt-1">${data.security_assessment}</p>
             </div>
@@ -610,17 +659,17 @@ function openPacketModal(idx) {
     const pkt = packetsCache[idx];
     if (!pkt) return;
     document.getElementById('modalBody').innerHTML = `
-        <div class="p-3 bg-black/60 rounded-lg border border-cyan-500/30 space-y-1">
-            <p><strong class="text-cyan-400">Timestamp:</strong> ${pkt.formatted_time}</p>
-            <p><strong class="text-cyan-400">Protocol:</strong> ${pkt.protocol}</p>
-            <p><strong class="text-cyan-400">Length:</strong> ${pkt.length} bytes</p>
-            <p><strong class="text-cyan-400">Source:</strong> ${pkt.src_ip}${pkt.src_port ? ':' + pkt.src_port : ''}</p>
-            <p><strong class="text-cyan-400">Destination:</strong> ${pkt.dst_ip}${pkt.dst_port ? ':' + pkt.dst_port : ''}</p>
-            ${pkt.flags ? `<p><strong class="text-cyan-400">Flags:</strong> ${pkt.flags}</p>` : ''}
-            <p><strong class="text-cyan-400">Summary:</strong> ${pkt.summary}</p>
+        <div class="p-3 bg-black/60 rounded-lg border border-blue-500/30 space-y-1">
+            <p><strong class="text-blue-400">Timestamp:</strong> ${pkt.formatted_time}</p>
+            <p><strong class="text-blue-400">Protocol:</strong> ${pkt.protocol}</p>
+            <p><strong class="text-blue-400">Length:</strong> ${pkt.length} bytes</p>
+            <p><strong class="text-blue-400">Source:</strong> ${pkt.src_ip}${pkt.src_port ? ':' + pkt.src_port : ''}</p>
+            <p><strong class="text-blue-400">Destination:</strong> ${pkt.dst_ip}${pkt.dst_port ? ':' + pkt.dst_port : ''}</p>
+            ${pkt.flags ? `<p><strong class="text-blue-400">Flags:</strong> ${pkt.flags}</p>` : ''}
+            <p><strong class="text-blue-400">Summary:</strong> ${pkt.summary}</p>
         </div>
         ${pkt.raw_hex_preview ? `
-        <div class="p-3 bg-black/60 rounded-lg border border-cyan-500/30 space-y-1">
+        <div class="p-3 bg-black/60 rounded-lg border border-blue-500/30 space-y-1">
             <p class="text-slate-400 font-bold mb-1">Raw Hex & ASCII Payload Preview:</p>
             <div class="p-2 bg-black rounded font-mono text-[10px] text-emerald-400 break-all select-all">${pkt.raw_hex_preview}</div>
         </div>` : ''}
@@ -632,5 +681,24 @@ function closeModal() {
     document.getElementById('packetModal').classList.add('hidden');
 }
 
-// Start WebSocket on page load
-connectWebSocket();
+// URL Route Handler: support #threats, #scan, #sockets, #talkers or ?tab=threats
+function handleUrlRouting() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    const hash = window.location.hash.replace('#', '');
+    const targetTab = tabParam || hash;
+
+    if (targetTab) {
+        if (targetTab === 'scan' || targetTab === 'radar') {
+            switchTab('hosts');
+        } else {
+            switchTab(targetTab);
+        }
+    }
+}
+
+window.addEventListener('hashchange', handleUrlRouting);
+window.addEventListener('DOMContentLoaded', () => {
+    handleUrlRouting();
+    connectWebSocket();
+});
