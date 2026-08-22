@@ -217,13 +217,6 @@ def run_service(args):
         if args.ui == "terminal":
             from rich.live import Live
 
-            # Enable Mouse Tracking in Terminal (SGR Mode)
-            try:
-                sys.stdout.write("\x1b[?1000h\x1b[?1002h\x1b[?1006h")
-                sys.stdout.flush()
-            except Exception:
-                pass
-
             # Live screen instance
             live = Live(tui_dashboard.render(), screen=True, auto_refresh=False, console=tui_dashboard.console)
             live.start()
@@ -239,11 +232,12 @@ def run_service(args):
                     orig_mode = wintypes.DWORD()
                     kernel32.GetConsoleMode(h_in, ctypes.byref(orig_mode))
                     
-                    # Enable Mouse Input & Extended flags in Windows Console
-                    ENABLE_MOUSE_INPUT = 0x0010
+                    # Enable Windows Console QuickEdit mode (native text selection, mouse highlight & copy)
+                    ENABLE_QUICK_EDIT_MODE = 0x0040
                     ENABLE_EXTENDED_FLAGS = 0x0080
                     ENABLE_WINDOW_INPUT = 0x0008
-                    kernel32.SetConsoleMode(h_in, orig_mode.value | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS | ENABLE_WINDOW_INPUT)
+                    ENABLE_PROCESSED_INPUT = 0x0001
+                    kernel32.SetConsoleMode(h_in, (orig_mode.value & ~0x0010) | ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS | ENABLE_WINDOW_INPUT | ENABLE_PROCESSED_INPUT)
 
                     ir = (INPUT_RECORD * 16)()
                     read_count = wintypes.DWORD()
@@ -364,8 +358,8 @@ def run_service(args):
                                         running = False
                                         break
                                     live.update(tui_dashboard.render(), refresh=True)
-                            except Exception as e:
-                                logger.debug("Linux stdin exception: %s", e)
+                                except Exception as e:
+                                    logger.debug("Linux stdin exception: %s", e)
                     finally:
                         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
@@ -382,13 +376,6 @@ def run_service(args):
                     live.update(tui_dashboard.render(), refresh=True)
                 except Exception as e:
                     logger.debug("Live render refresh exception: %s", e)
-
-            # Disable Mouse Tracking on exit
-            try:
-                sys.stdout.write("\x1b[?1000l\x1b[?1002l\x1b[?1006l")
-                sys.stdout.flush()
-            except Exception:
-                pass
 
             live.stop()
         else:
@@ -408,11 +395,6 @@ def run_service(args):
     finally:
         running = False
         sniffer.stop()
-        try:
-            sys.stdout.write("\x1b[?1000l\x1b[?1002l\x1b[?1006l")
-            sys.stdout.flush()
-        except Exception:
-            pass
         if os.path.exists(Config.PID_FILE):
             try:
                 os.remove(Config.PID_FILE)
