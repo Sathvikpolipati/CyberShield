@@ -692,11 +692,202 @@ footer a:hover { color: #60a5fa; }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: #000; }
 ::-webkit-scrollbar-thumb { background: #1d6dff; border-radius: 3px; }
+
+/* Clickable Platform Buttons */
+.badge.btn-platform {
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  user-select: none;
+  border: 1px solid rgba(29, 109, 255, 0.4);
+}
+.badge.btn-platform:hover {
+  background: rgba(29, 109, 255, 0.28);
+  border-color: #00dcff;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 18px rgba(0, 220, 255, 0.3);
+}
+.badge.btn-platform:active {
+  transform: translateY(0);
+}
+
+/* === INSTALLATION & SETUP MODAL === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 2, 10, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-card {
+  background: rgba(4, 10, 26, 0.96);
+  border: 1px solid rgba(0, 220, 255, 0.4);
+  box-shadow: 0 0 50px rgba(29, 109, 255, 0.25), 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 720px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.94);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-overlay.open .modal-card {
+  transform: scale(1);
+}
+.modal-header {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(29, 109, 255, 0.25);
+  background: rgba(2, 6, 18, 0.85);
+}
+.modal-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+}
+.modal-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.modal-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(2, 6, 18, 0.4);
+  overflow-x: auto;
+}
+.modal-tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  border-radius: 6px 6px 0 0;
+}
+.modal-tab-btn.active {
+  color: #00dcff;
+  background: rgba(0, 220, 255, 0.08);
+  border-bottom-color: #00dcff;
+}
+.modal-tab-btn:hover:not(.active) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+}
+.modal-body {
+  padding: 24px;
+  max-height: 68vh;
+  overflow-y: auto;
+}
+.install-pane {
+  display: none;
+  animation: fadeIn 0.2s ease;
+}
+.install-pane.active {
+  display: block;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.install-code-box {
+  background: rgba(1, 4, 14, 0.95);
+  border: 1px solid rgba(0, 220, 255, 0.25);
+  border-radius: 10px;
+  padding: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  color: #cbd5e1;
+  position: relative;
+  overflow-x: auto;
+  white-space: pre;
+  margin-top: 12px;
+}
+.btn-copy-code {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(29, 109, 255, 0.25);
+  border: 1px solid rgba(0, 220, 255, 0.4);
+  color: #00dcff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-copy-code:hover {
+  background: var(--blue-primary);
+  color: #fff;
+  box-shadow: 0 0 12px var(--blue-glow);
+}
+.modal-footer-cta {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  color: var(--muted);
+}
+.modal-footer-cta a {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 600;
+}
+.modal-footer-cta a:hover {
+  color: #00dcff;
+}
+
 </style>
 </head>
 <body>
 
-<!-- High-Performance Blue & White Cyber Animation Canvas -->
+<!-- High-Performance Blue & White Cyber Canvas Animation Script -->
 <canvas id="cyberCanvas"></canvas>
 <div class="bg-scrim"></div>
 
@@ -710,6 +901,137 @@ footer a:hover { color: #60a5fa; }
     Launch Live SOC
     <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
   </a>
+</div>
+
+
+<!-- Interactive Installation & Setup Platform Modal -->
+<div class="modal-overlay" id="installModal" onclick="handleModalBackdropClick(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span style="font-size: 20px;">🚀</span>
+        <span>Installation &amp; Setup Guide</span>
+      </div>
+      <button class="modal-close" onclick="closeInstallModal()" aria-label="Close modal">&times;</button>
+    </div>
+
+    <!-- Platform Switcher Tabs -->
+    <div class="modal-tabs">
+      <button class="modal-tab-btn active" id="tabBtnWindows" onclick="switchInstallTab('windows')">
+        <span>🪟</span> Windows
+      </button>
+      <button class="modal-tab-btn" id="tabBtnLinux" onclick="switchInstallTab('linux')">
+        <span>🐧</span> Linux
+      </button>
+      <button class="modal-tab-btn" id="tabBtnTermux" onclick="switchInstallTab('termux')">
+        <span>📱</span> Android Termux
+      </button>
+      <button class="modal-tab-btn" id="tabBtnMacos" onclick="switchInstallTab('macos')">
+        <span>🍎</span> macOS
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Windows Pane -->
+      <div class="install-pane active" id="paneWindows">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px;">
+          <span style="font-size:13px; font-weight:700; color:#fff;">🪟 Windows Setup (PowerShell / CMD / VS Code)</span>
+          <span class="badge" style="font-size:11px; padding:3px 8px;">Python 3.9+</span>
+        </div>
+        <p style="font-size:12px; color:var(--sub); margin-bottom:4px;">Run the following commands in PowerShell or Windows Terminal to clone and start CyberShield:</p>
+        <div class="install-code-box">
+          <button class="btn-copy-code" onclick="copyInstallCode('codeWindows', this)">Copy Code</button>
+          <code id="codeWindows"># 1. Clone repository
+git clone https://github.com/Sathvikpolipati/CyberShield.git
+cd CyberShield
+
+# 2. Create and activate Python virtual environment
+python -m venv venv
+.\venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Launch CyberShield Web Dashboard:
+python run_web.py
+# Open http://localhost:8000 in your browser
+
+# Or launch the interactive Terminal TUI:
+python run_tui.py</code>
+        </div>
+      </div>
+
+      <!-- Linux Pane -->
+      <div class="install-pane" id="paneLinux">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px;">
+          <span style="font-size:13px; font-weight:700; color:#fff;">🐧 Linux Setup (Ubuntu / Debian / Kali / Arch)</span>
+          <span class="badge" style="font-size:11px; padding:3px 8px;">Root Privileges</span>
+        </div>
+        <p style="font-size:12px; color:var(--sub); margin-bottom:4px;">Install dependencies and run CyberShield with root elevation for raw socket sniffing and iptables:</p>
+        <div class="install-code-box">
+          <button class="btn-copy-code" onclick="copyInstallCode('codeLinux', this)">Copy Code</button>
+          <code id="codeLinux"># 1. Install prerequisites
+sudo apt update && sudo apt install -y python3 python3-pip python3-venv libpcap-dev
+
+# 2. Clone repository & setup virtual environment
+git clone https://github.com/Sathvikpolipati/CyberShield.git
+cd CyberShield
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 3. Launch Web Dashboard with root privileges:
+sudo ./venv/bin/python run_web.py
+# Open http://localhost:8000</code>
+        </div>
+      </div>
+
+      <!-- Termux Pane -->
+      <div class="install-pane" id="paneTermux">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px;">
+          <span style="font-size:13px; font-weight:700; color:#fff;">📱 Android Termux Setup (1-Click Installer)</span>
+          <span class="badge" style="font-size:11px; padding:3px 8px;">ARM64 / Termux</span>
+        </div>
+        <p style="font-size:12px; color:var(--sub); margin-bottom:4px;">Automated 1-click installer configured for touch controls and mobile SOC telemetry:</p>
+        <div class="install-code-box">
+          <button class="btn-copy-code" onclick="copyInstallCode('codeTermux', this)">Copy Code</button>
+          <code id="codeTermux"># 1. Clone repository in Termux
+git clone https://github.com/Sathvikpolipati/CyberShield.git
+cd CyberShield
+
+# 2. Make installer executable and run
+chmod +x termux_setup.sh
+./termux_setup.sh</code>
+        </div>
+      </div>
+
+      <!-- macOS Pane -->
+      <div class="install-pane" id="paneMacos">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px;">
+          <span style="font-size:13px; font-weight:700; color:#fff;">🍎 macOS Setup (Apple Silicon / Intel)</span>
+          <span class="badge" style="font-size:11px; padding:3px 8px;">macOS 12+</span>
+        </div>
+        <p style="font-size:12px; color:var(--sub); margin-bottom:4px;">Set up virtual environment and launch CyberShield with sudo elevation:</p>
+        <div class="install-code-box">
+          <button class="btn-copy-code" onclick="copyInstallCode('codeMacos', this)">Copy Code</button>
+          <code id="codeMacos"># 1. Clone repository & setup
+git clone https://github.com/Sathvikpolipati/CyberShield.git
+cd CyberShield
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Run CyberShield Web Dashboard:
+sudo ./venv/bin/python run_web.py</code>
+        </div>
+      </div>
+
+      <div class="modal-footer-cta">
+        <span>📖 View full documentation and source on GitHub:</span>
+        <a href="https://github.com/Sathvikpolipati/CyberShield#installation--setup-by-platform" target="_blank" rel="noopener">GitHub Installation Guide &rarr;</a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="site-wrap">
@@ -792,10 +1114,10 @@ footer a:hover { color: #60a5fa; }
     </div>
 
     <div class="platform-badges">
-      <span class="badge active"><span>🪟</span> Windows</span>
-      <span class="badge active"><span>🐧</span> Linux</span>
-      <span class="badge active"><span>📱</span> Android Termux</span>
-      <span class="badge active"><span>🍎</span> macOS</span>
+      <button type="button" onclick="openInstallModal('windows')" class="badge active btn-platform" title="Click to view Windows Installation & Setup Guide"><span>🪟</span> Windows</button>
+      <button type="button" onclick="openInstallModal('linux')" class="badge active btn-platform" title="Click to view Linux Installation & Setup Guide"><span>🐧</span> Linux</button>
+      <button type="button" onclick="openInstallModal('termux')" class="badge active btn-platform" title="Click to view Android Termux Installation & Setup Guide"><span>📱</span> Android Termux</button>
+      <button type="button" onclick="openInstallModal('macos')" class="badge active btn-platform" title="Click to view macOS Installation & Setup Guide"><span>🍎</span> macOS</button>
       <span class="badge"><span>⚡</span> Zero Latency</span>
       <span class="badge"><span>🔒</span> Zero Driver Required</span>
     </div>
@@ -1296,6 +1618,68 @@ function toggleFaq(btn) {
   const isOpen = item.classList.contains('open');
   document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
   if (!isOpen) item.classList.add('open');
+}
+
+// Interactive Platform Installation Modal Handlers
+function openInstallModal(platform) {
+  if (!platform) platform = 'windows';
+  const modal = document.getElementById('installModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  switchInstallTab(platform);
+  document.body.style.overflow = 'hidden';
+}
+
+function closeInstallModal() {
+  const modal = document.getElementById('installModal');
+  if (modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleModalBackdropClick(e) {
+  if (e.target && e.target.id === 'installModal') {
+    closeInstallModal();
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeInstallModal();
+});
+
+function switchInstallTab(platform) {
+  const platforms = ['windows', 'linux', 'termux', 'macos'];
+  platforms.forEach(p => {
+    const capitalized = p.charAt(0).toUpperCase() + p.slice(1);
+    const btn = document.getElementById(`tabBtn${capitalized}`);
+    const pane = document.getElementById(`pane${capitalized}`);
+    if (btn) {
+      if (p === platform) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+    if (pane) {
+      if (p === platform) pane.classList.add('active');
+      else pane.classList.remove('active');
+    }
+  });
+}
+
+function copyInstallCode(elemId, btn) {
+  const codeElem = document.getElementById(elemId);
+  if (!codeElem) return;
+  const text = codeElem.innerText || codeElem.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const originalText = btn.innerText;
+    btn.innerText = 'Copied! ✓';
+    btn.style.borderColor = '#10b981';
+    btn.style.color = '#10b981';
+    setTimeout(() => {
+      btn.innerText = originalText;
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 2000);
+  }).catch(err => {
+    console.error('Copy failed', err);
+  });
 }
 </script>
 </body>
