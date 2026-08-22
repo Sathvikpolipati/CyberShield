@@ -58,7 +58,7 @@
         .glass-panel:hover {
             border-color: rgba(0, 220, 255, 0.35) !important;
         }
-
+    
         @keyframes blinkGreenGlow {
             0%, 100% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 12px #10b981, 0 0 4px #34d399; }
             50% { opacity: 0.25; transform: scale(0.85); box-shadow: 0 0 2px #10b981; }
@@ -246,203 +246,214 @@
                     </div>
                 </div>
 
-                <!-- Live Stream Feed Table -->
-                <div class="glass-panel rounded-2xl overflow-hidden flex flex-col">
-                    <div class="px-6 py-4 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-3 bg-black/40">
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> Live Network Packet Stream (Zero Latency)
-                        </h3>
-                        <div class="flex items-center gap-3">
-                            <input type="text" id="filterInput" placeholder="Filter IP, port, proto..." onkeyup="applySearchFilter()" class="bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 w-48 font-mono">
-                            <button onclick="clearPacketTable()" class="px-3 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-mono transition">Clear Buffer</button>
+                <!-- Live Packet Stream + Mini Threat Alerts Feed -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-7 glass-panel p-5 rounded-2xl flex flex-col h-[480px]">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Packet Stream Table
+                                </h3>
+                                <p class="text-xs text-slate-400">Click any row to open Deep Packet Hex Inspector modal.</p>
+                            </div>
+                            <input type="text" id="packetSearch" onkeyup="filterPackets()" placeholder="Filter IP/Port..." class="px-3 py-1 rounded-lg bg-black/60 border border-cyan-500/30 text-xs font-mono text-cyan-300 placeholder-slate-500 focus:outline-none focus:border-cyan-400">
+                        </div>
+                        <div class="overflow-y-auto flex-1 rounded-lg border border-cyan-500/20 bg-black/40">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-black/80 sticky top-0 text-slate-400 uppercase border-b border-cyan-500/20">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Time</th>
+                                        <th class="py-2.5 px-2">Proto</th>
+                                        <th class="py-2.5 px-3">SRC &rarr; DST</th>
+                                        <th class="py-2.5 px-2 text-right">Bytes</th>
+                                        <th class="py-2.5 px-3">Info Summary</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="packetTableBody" class="divide-y divide-slate-800/50 text-slate-300">
+                                    <tr><td colspan="5" class="py-12 text-center text-slate-500 font-mono">Listening on interface... Intercepting live traffic.</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    
-                    <div class="overflow-x-auto max-h-96 overflow-y-auto">
-                        <table class="w-full text-left border-collapse text-xs font-mono">
-                            <thead class="bg-slate-900/90 text-slate-400 sticky top-0 border-b border-cyan-500/20 z-10">
+
+                    <div class="lg:col-span-5 glass-panel p-5 rounded-2xl flex flex-col h-[480px]">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span> Security Threat Alerts Feed
+                            </h3>
+                            <button onclick="switchTab('threats')" class="text-xs text-cyan-400 hover:underline font-mono">View Threat Center &rarr;</button>
+                        </div>
+                        <div id="alertContainer" class="overflow-y-auto flex-1 space-y-3">
+                            <div id="noAlertsMsg" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                                <p class="text-sm font-medium text-slate-400">Zero Active Threats Detected</p>
+                                <p class="text-xs text-slate-500 mt-1">Live traffic is nominal.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: THREAT DEFENSE CENTER ('threats') -->
+            <div id="view-threats" class="hidden space-y-6">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <span class="text-red-400">🚨</span> CyberShield NIDS Threat Center & Active Defense
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">Sliding-window heuristic anomaly triggers with automated and manual firewall isolation.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="simulateAttack('port_scan')" class="px-3.5 py-1.5 rounded-lg bg-red-900/80 hover:bg-red-800 text-white text-xs font-mono font-bold transition">
+                                💥 Trigger Test Attack
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="threatsFullContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pt-2">
+                        <div class="col-span-2 text-center py-12 text-slate-500 font-mono">
+                            No active threats detected. All perimeter traffic nominal.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: TOP TALKERS & BANDWIDTH ('talkers') -->
+            <div id="view-talkers" class="hidden space-y-6">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-cyan-500/20 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <span class="text-yellow-400">📈</span> Top Talker Endpoints & Bandwidth Consumers
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">Real-time ranking of communicating host IPs by packet volume and bandwidth consumption.</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-cyan-500/20 bg-black/40">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-black/80 sticky top-0 text-slate-400 uppercase border-b border-cyan-500/20">
                                 <tr>
-                                    <th class="py-2.5 px-4 font-semibold">TIMESTAMP</th>
-                                    <th class="py-2.5 px-4 font-semibold">PROTOCOL</th>
-                                    <th class="py-2.5 px-4 font-semibold">SOURCE IP:PORT</th>
-                                    <th class="py-2.5 px-4 font-semibold">DESTINATION IP:PORT</th>
-                                    <th class="py-2.5 px-4 font-semibold">PAYLOAD / INFO</th>
-                                    <th class="py-2.5 px-4 font-semibold text-right">SIZE</th>
-                                    <th class="py-2.5 px-4 font-semibold text-center">ACTION</th>
+                                    <th class="py-3 px-4">Rank</th>
+                                    <th class="py-3 px-4">IP Address</th>
+                                    <th class="py-3 px-4">Packets</th>
+                                    <th class="py-3 px-4">Bandwidth Consumed</th>
+                                    <th class="py-3 px-4">Traffic Share</th>
+                                    <th class="py-3 px-4 text-right">Defense Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="packetTableBody" class="divide-y divide-slate-800/40 text-slate-300">
+                            <tbody id="talkersTableBody" class="divide-y divide-slate-800/50 text-slate-300">
+                                <tr><td colspan="6" class="py-8 text-center text-slate-500">Sampling talker endpoints...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: LIVE PROCESS SOCKETS ('sockets' / 'ps') -->
+            <div id="view-sockets" class="hidden space-y-6">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-cyan-500/20 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <span class="text-cyan-400">💻</span> System Process Sockets Inspector (psutil)
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">Active TCP/UDP sockets mapped to native OS process names and PIDs with zero subprocess lag.</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-cyan-500/20 bg-black/40 max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-black/80 sticky top-0 text-slate-400 uppercase border-b border-cyan-500/20">
                                 <tr>
-                                    <td colspan="7" class="text-center py-8 text-slate-500">
-                                        <div class="flex flex-col items-center justify-center space-y-2">
-                                            <div class="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Sniffing network packets in real-time...</span>
-                                        </div>
+                                    <th class="py-3 px-4">Protocol</th>
+                                    <th class="py-3 px-4">Process Name</th>
+                                    <th class="py-3 px-4">PID</th>
+                                    <th class="py-3 px-4">Local Address:Port</th>
+                                    <th class="py-3 px-4">Remote Address:Port</th>
+                                    <th class="py-3 px-4 text-center">Socket State</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullSocketTableBody" class="divide-y divide-slate-800/50 text-slate-300">
+                                <tr><td colspan="6" class="py-8 text-center text-slate-500">Polling local system sockets...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: LOCAL SUBNET ARP RADAR ('hosts' / 'scan') -->
+            <div id="view-hosts" class="hidden space-y-6">
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <span class="text-emerald-400">📡</span> Local Subnet ARP Radar (LAN Discovery)
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">Auto-discovered devices on local subnet <strong class="text-emerald-400"><span id="netSubnet">192.168.1.0/24</span></strong>.</p>
+                        </div>
+                        <button onclick="scanLocalSubnet()" id="btnSubnetScan" class="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-mono font-bold shadow-lg shadow-cyan-500/25 transition active:scale-95 flex items-center gap-2">
+                            <span id="scanSpin" class="hidden animate-spin">🌀</span>
+                            <span>🚀 SCAN LOCAL SUBNET NOW</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-cyan-500/20 bg-black/40 max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-black/80 sticky top-0 text-slate-400 uppercase border-b border-cyan-500/20">
+                                <tr>
+                                    <th class="py-3 px-4">IP Address</th>
+                                    <th class="py-3 px-4">Hostname</th>
+                                    <th class="py-3 px-4">MAC Address</th>
+                                    <th class="py-3 px-4">Hardware Vendor</th>
+                                    <th class="py-3 px-4">Last Seen</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hostsTableBody" class="divide-y divide-slate-800/50 text-slate-300">
+                                <tr>
+                                    <td colspan="6" class="py-8 text-center text-slate-500 font-mono">
+                                        Click "SCAN LOCAL SUBNET NOW" to discover active LAN assets.
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-                <!-- Recent Alerts Bar -->
-                <div class="glass-panel p-5 rounded-2xl">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-red-400"></span> Live Security Threat Alerts Feed
-                        </h3>
-                        <a href="javascript:void(0)" onclick="switchTab('threats')" class="text-xs text-cyan-400 hover:text-cyan-300 font-mono font-bold">View Threat Center &rarr;</a>
-                    </div>
-                    <div id="quickAlertsContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 font-mono text-center">
-                            No active security alerts. Network is operating under nominal parameters.
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            <!-- TAB 2: THREAT CENTER VIEW -->
-            <div id="view-threats" class="hidden space-y-6">
-                <div class="glass-panel p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-cyan-500/20">
-                        <div>
-                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                                🚨 Active Intrusion Detection & Threat Defense Center
-                            </h2>
-                            <p class="text-xs text-slate-400 font-mono mt-1">Multi-vector heuristic signature analysis engine</p>
-                        </div>
-                        <button onclick="clearAllThreats()" class="px-3 py-1.5 rounded-lg bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-mono hover:bg-red-900 transition">
-                            Clear Dismissed
-                        </button>
-                    </div>
-
-                    <div id="threatCenterContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="col-span-full p-8 rounded-xl bg-black/40 border border-slate-800 text-center text-slate-400 font-mono">
-                            🛡️ No active network threats detected. All heuristics nominal.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: TOP TALKERS VIEW -->
-            <div id="view-talkers" class="hidden space-y-6">
-                <div class="glass-panel p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-cyan-500/20">
-                        <div>
-                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                                📈 Top Bandwidth Talkers & Endpoint Matrix
-                            </h2>
-                            <p class="text-xs text-slate-400 font-mono mt-1">Ranked endpoints by transfer volume and active flow sessions</p>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-xs font-mono">
-                            <thead class="bg-slate-900/90 text-slate-400 border-b border-cyan-500/20">
-                                <tr>
-                                    <th class="py-3 px-4 font-semibold">IP ADDRESS</th>
-                                    <th class="py-3 px-4 font-semibold">PACKET COUNT</th>
-                                    <th class="py-3 px-4 font-semibold">BANDWIDTH</th>
-                                    <th class="py-3 px-4 font-semibold">TRAFFIC RATIO</th>
-                                    <th class="py-3 px-4 font-semibold text-center">STATUS / MITIGATION</th>
-                                </tr>
-                            </thead>
-                            <tbody id="talkersTableBody" class="divide-y divide-slate-800/40 text-slate-300">
-                                <tr><td colspan="5" class="py-8 text-center text-slate-500">Calculating top bandwidth endpoints...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 4: PROCESS SOCKETS VIEW -->
-            <div id="view-sockets" class="hidden space-y-6">
-                <div class="glass-panel p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-cyan-500/20">
-                        <div>
-                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                                💻 System Process Sockets & PID Network Inspector
-                            </h2>
-                            <p class="text-xs text-slate-400 font-mono mt-1">Live OS kernel socket tables sampled via non-blocking asynchronous inspection</p>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
-                        <table class="w-full text-left border-collapse text-xs font-mono">
-                            <thead class="bg-slate-900/90 text-slate-400 border-b border-cyan-500/20 sticky top-0 z-10">
-                                <tr>
-                                    <th class="py-3 px-4 font-semibold">PID</th>
-                                    <th class="py-3 px-4 font-semibold">PROCESS NAME</th>
-                                    <th class="py-3 px-4 font-semibold">PROTO</th>
-                                    <th class="py-3 px-4 font-semibold">LOCAL ADDRESS</th>
-                                    <th class="py-3 px-4 font-semibold">REMOTE ADDRESS</th>
-                                    <th class="py-3 px-4 font-semibold">STATE</th>
-                                </tr>
-                            </thead>
-                            <tbody id="socketsTableBody" class="divide-y divide-slate-800/40 text-slate-300">
-                                <tr><td colspan="6" class="py-8 text-center text-slate-500">Sampling active system sockets...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 5: LAN HOST DISCOVERY RADAR VIEW -->
-            <div id="view-hosts" class="hidden space-y-6">
-                <div class="glass-panel p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-cyan-500/20">
-                        <div>
-                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                                📡 Local Subnet Host Discovery Radar
-                            </h2>
-                            <p class="text-xs text-slate-400 font-mono mt-1">ARP sweep bounded within local subnet scope (<span id="radarSubnetTxt">192.168.1.0/24</span>)</p>
-                        </div>
-                        <button onclick="triggerSubnetScan()" id="btnTriggerScan" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-mono font-bold shadow-lg shadow-emerald-500/20 transition flex items-center gap-2">
-                            <span>🔍</span> Run Subnet Sweep
-                        </button>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-xs font-mono">
-                            <thead class="bg-slate-900/90 text-slate-400 border-b border-cyan-500/20">
-                                <tr>
-                                    <th class="py-3 px-4 font-semibold">IP ADDRESS</th>
-                                    <th class="py-3 px-4 font-semibold">MAC ADDRESS</th>
-                                    <th class="py-3 px-4 font-semibold">VENDOR / HARDWARE</th>
-                                    <th class="py-3 px-4 font-semibold">LATENCY</th>
-                                    <th class="py-3 px-4 font-semibold text-center">PORT AUDIT</th>
-                                </tr>
-                            </thead>
-                            <tbody id="hostsTableBody" class="divide-y divide-slate-800/40 text-slate-300">
-                                <tr><td colspan="5" class="py-8 text-center text-slate-500">Click 'Run Subnet Sweep' to discover active hosts on your LAN.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 6: COMMAND MANUAL VIEW -->
+            <!-- TAB 6: COMMAND MANUAL & ARCHITECTURE ('manual') -->
             <div id="view-manual" class="hidden space-y-6">
-                <div class="glass-panel p-6 rounded-2xl space-y-4">
-                    <h2 class="text-lg font-bold text-white">📖 CyberShield SOC Operational Command Reference</h2>
-                    <p class="text-xs text-slate-300 font-mono">Interactive console shell command guide for terminal and web operations.</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 text-xs font-mono">
-                        <div class="p-4 rounded-xl bg-black/40 border border-slate-800 space-y-1.5">
-                            <div class="text-cyan-400 font-bold">scan / arp / netdiscover</div>
-                            <div class="text-slate-400">Triggers an animated ARP radar sweep across your local /24 subnet.</div>
+                <div class="glass-panel p-6 rounded-2xl space-y-6">
+                    <div class="border-b border-cyan-500/20 pb-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span class="text-purple-400">📖</span> CyberShield SOC Architecture & Operations Manual
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Complete command and operational reference guide for real-time traffic analysis and intrusion response.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-mono">
+                        <div class="p-4 rounded-xl bg-black/50 border border-cyan-500/30 space-y-2">
+                            <h3 class="font-bold text-cyan-300 text-sm">🎯 Core SOC Terminal Commands</h3>
+                            <ul class="space-y-1 text-slate-300">
+                                <li><strong class="text-yellow-400">threats / alerts</strong> - Open full-screen Threat Defense Center</li>
+                                <li><strong class="text-yellow-400">talkers</strong> - Open Top Communicating Endpoints table</li>
+                                <li><strong class="text-yellow-400">ps / sockets</strong> - Inspect active OS process socket connections</li>
+                                <li><strong class="text-yellow-400">scan / arp</strong> - Trigger local subnet ARP radar sweep</li>
+                                <li><strong class="text-yellow-400">block &lt;ip&gt;</strong> - Ban attacker via Tier-1 and OS firewall</li>
+                                <li><strong class="text-yellow-400">unblock &lt;ip&gt;</strong> - Restore network access for host</li>
+                                <li><strong class="text-yellow-400">pdf</strong> - Generate Executive PDF Forensic Report</li>
+                            </ul>
                         </div>
-                        <div class="p-4 rounded-xl bg-black/40 border border-slate-800 space-y-1.5">
-                            <div class="text-cyan-400 font-bold">block &lt;ip&gt; / ban &lt;ip&gt;</div>
-                            <div class="text-slate-400">Inserts host firewall drop rule and drops incoming frames with 0ms latency.</div>
-                        </div>
-                        <div class="p-4 rounded-xl bg-black/40 border border-slate-800 space-y-1.5">
-                            <div class="text-cyan-400 font-bold">filter &lt;proto&gt;</div>
-                            <div class="text-slate-400">Filters live traffic stream by TCP, UDP, DNS, HTTPS, or ICMP.</div>
-                        </div>
-                        <div class="p-4 rounded-xl bg-black/40 border border-slate-800 space-y-1.5">
-                            <div class="text-cyan-400 font-bold">ps / sockets</div>
-                            <div class="text-slate-400">Inspects active OS kernel socket connections and process PIDs.</div>
+
+                        <div class="p-4 rounded-xl bg-black/50 border border-cyan-500/30 space-y-2">
+                            <h3 class="font-bold text-emerald-300 text-sm">🛡️ Threat Detection Heuristics</h3>
+                            <ul class="space-y-1 text-slate-300">
+                                <li><strong class="text-cyan-300">Port Scan:</strong> >15 unique ports probed in 3 seconds</li>
+                                <li><strong class="text-cyan-300">SYN Flood:</strong> >30 raw SYN bursts without ACK response</li>
+                                <li><strong class="text-cyan-300">ICMP Sweep:</strong> >10 echo requests across subnet in 2 seconds</li>
+                                <li><strong class="text-cyan-300">DNS Tunneling:</strong> High entropy (>3.8) exfiltration query strings</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -450,32 +461,119 @@
 
         </main>
 
-        <!-- Footer -->
-        <footer class="border-t border-cyan-500/20 bg-[#050811]/90 backdrop-blur-xl px-6 py-4 text-center text-xs font-mono text-slate-400 mt-auto">
-            <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span>🛡️ CyberShield SOC v2.0 &bull; Enterprise Zero-Driver Threat Defense Engine</span>
-                <span class="text-cyan-400">Active Defense: <span id="footerMitigateStatus" class="font-bold text-emerald-400">ENABLED</span></span>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Hex Inspection Modal -->
-    <div id="hexModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="glass-panel w-full max-w-2xl rounded-2xl p-6 space-y-4 border border-cyan-500/40">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-sm font-bold text-white font-mono flex items-center gap-2">
-                    <span>🔬</span> Raw Packet Hex Inspector
-                </h3>
-                <button onclick="closeHexModal()" class="text-slate-400 hover:text-white font-mono text-sm">&times; Close</button>
-            </div>
-            <div id="hexDetails" class="text-xs font-mono text-slate-300 space-y-1"></div>
-            <div class="bg-black/90 p-4 rounded-xl border border-slate-800 overflow-x-auto max-h-60">
-                <pre id="hexDumpContent" class="text-cyan-400 font-mono text-xs leading-relaxed"></pre>
+        <!-- Deep Packet Hex Inspector Modal -->
+        <div id="packetModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-panel max-w-2xl w-full p-6 rounded-2xl space-y-4 shadow-2xl border-cyan-500/40">
+                <div class="flex items-center justify-between border-b border-cyan-500/20 pb-3">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <span>🔬</span> Deep Packet Hex Inspector
+                    </h3>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+                <div id="modalBody" class="space-y-3 font-mono text-xs text-slate-300 max-h-[65vh] overflow-y-auto"></div>
+                <div class="flex justify-end pt-2 border-t border-cyan-500/20">
+                    <button onclick="closeModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono">Close</button>
+                </div>
             </div>
         </div>
+
+        <!-- Port Scan Modal -->
+        <div id="portModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-panel max-w-xl w-full p-6 rounded-2xl space-y-4 shadow-2xl border-cyan-500/40">
+                <div class="flex items-center justify-between border-b border-cyan-500/20 pb-3">
+                    <h3 class="text-sm font-bold text-white">Target Port Scan: <span id="portModalIp" class="text-cyan-400 font-mono"></span></h3>
+                    <button onclick="document.getElementById('portModal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+                <div id="portModalBody" class="space-y-3 font-mono text-xs text-slate-300 max-h-[60vh] overflow-y-auto"></div>
+                <div class="flex justify-end pt-2 border-t border-cyan-500/20">
+                    <button onclick="document.getElementById('portModal').classList.add('hidden')" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="border-t border-cyan-500/20 bg-[#030712]/80 backdrop-blur-md text-slate-500 text-xs py-4 px-6 text-center font-mono">
+            CYBERSHIELD SOC • High-Performance Network Traffic Analyser & Threat Defense • MIT License
+        </footer>
+
     </div>
 
-    <!-- Script Import -->
+    <!-- Ambient Dashboard Cyber Canvas Background Animation -->
+    <script>
+    (function() {
+        const c = document.getElementById('dashCyberCanvas');
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        let W = c.width = window.innerWidth;
+        let H = c.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            W = c.width = window.innerWidth;
+            H = c.height = window.innerHeight;
+        });
+
+        const particles = Array.from({ length: 45 }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.45,
+            vy: (Math.random() - 0.5) * 0.45,
+            r: Math.random() * 2 + 1,
+            color: Math.random() > 0.4 ? 'rgba(0, 220, 255, 0.45)' : 'rgba(255, 255, 255, 0.55)'
+        }));
+
+        function drawDashBg() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Subtle cyber grid
+            ctx.strokeStyle = 'rgba(0, 150, 255, 0.035)';
+            ctx.lineWidth = 1;
+            const gridSpacing = 48;
+            for (let x = 0; x < W; x += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let y = 0; y < H; y += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            // Synaptic connections
+            for (let i = 0; i < particles.length; i++) {
+                const p1 = particles[i];
+                p1.x += p1.vx;
+                p1.y += p1.vy;
+                if (p1.x < 0 || p1.x > W) p1.vx *= -1;
+                if (p1.y < 0 || p1.y > H) p1.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p1.x, p1.y, p1.r, 0, Math.PI * 2);
+                ctx.fillStyle = p1.color;
+                ctx.fill();
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                    if (dist < 140) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(0, 200, 255, ${0.12 * (1 - dist / 140)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(drawDashBg);
+        }
+        drawDashBg();
+    })();
+    </script>
+
     <script src="static/app.js"></script>
 </body>
 </html>
