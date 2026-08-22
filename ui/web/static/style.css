@@ -1,0 +1,17 @@
+/* CyberShield Dark Cyberpunk Theme */
+:root {
+  --bg-dark: #090d16;
+  --panel-bg: #0f172a;
+  --border-color: #1e293b;
+  --cyan-glow: #00f2fe;
+  --green-glow: #10b981;
+  --red-glow: #ef4444;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: #f8fafc;
+  font-family: 'JetBrains Mono', 'Segoe UI', monospace;
+  margin: 0;
+  padding: 0;
+}
