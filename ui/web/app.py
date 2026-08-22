@@ -2,10 +2,11 @@ import asyncio
 import logging
 import os
 import queue
+import random
 import sys
 import threading
 import time
-from collections import deque
+from collections import deque, Counter
 from typing import List, Dict, Any, Optional
 import psutil
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
@@ -38,10 +39,13 @@ os.makedirs(static_dir, exist_ok=True)
 templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+# Telemetry Ring Buffers & Counters
 recent_packets: deque = deque(maxlen=Config.PACKET_HISTORY_LIMIT)
 recent_alerts: deque = deque(maxlen=Config.ALERT_HISTORY_LIMIT)
 throughput_history: deque = deque([0.0]*60, maxlen=Config.THROUGHPUT_HISTORY_SECS)
 current_sockets: List[Dict[str, Any]] = []
+top_talkers_pkts: Counter = Counter()
+top_talkers_bytes: Counter = Counter()
 _pname_cache: Dict[int, str] = {}
 
 detection_engine: Optional[Any] = None
@@ -57,6 +61,7 @@ stats = {
     "protocols": {"TCP": 0, "UDP": 0, "ICMP": 0, "DNS": 0, "HTTP": 0, "HTTPS": 0, "OTHER": 0},
     "alert_count": 0,
     "active_threats": 0,
+    "autoblock_enabled": True,
     "start_time": time.time()
 }
 
@@ -69,6 +74,29 @@ class PortScanReq(BaseModel):
 
 class SubnetScanReq(BaseModel):
     subnet_cidr: Optional[str] = None
+
+class BlockReq(BaseModel):
+    ip: str
+    reason: Optional[str] = "Admin web action"
+
+class AttackSimReq(BaseModel):
+    attack_type: str  # 'port_scan', 'syn_flood', 'icmp_sweep', 'dns_tunnel'
+
+def get_top_talkers_list(limit: int = 15) -> List[Dict[str, Any]]:
+    talkers = []
+    total_bytes = max(stats["total_bytes"], 1)
+    for ip, pkts in top_talkers_pkts.most_common(limit):
+        b = top_talkers_bytes.get(ip, 0)
+        pct = round((b / total_bytes) * 100, 1)
+        talkers.append({
+            "ip": ip,
+            "packets": pkts,
+            "bytes": b,
+            "formatted_bytes": f"{b / 1024:.1f} KB" if b < 1024*1024 else f"{b / (1024*1024):.2f} MB",
+            "percent": pct,
+            "is_blocked": FirewallManager.is_ip_blocked(ip)
+        })
+    return talkers
 
 # Pure Python In-Memory Socket Poller
 async def socket_poller_task():
@@ -125,6 +153,7 @@ async def ws_broadcast_task():
         stats["packets_per_sec"] = round(instant_pkts, 1)
         stats["bytes_per_sec"] = round(instant_bytes, 1)
         throughput_history.append(stats["packets_per_sec"])
+        stats["autoblock_enabled"] = FirewallManager.autoblock_enabled
 
         payload = {
             "type": "tick",
@@ -132,7 +161,9 @@ async def ws_broadcast_task():
             "threat_level": "CRITICAL" if stats["active_threats"] > 3 else ("ELEVATED" if stats["active_threats"] > 0 else "NOMINAL"),
             "throughput": list(throughput_history),
             "protocols": stats["protocols"],
-            "sockets": current_sockets[:25]
+            "sockets": current_sockets[:25],
+            "talkers": get_top_talkers_list(10),
+            "blocked_ips": list(FirewallManager.blocked_ips)
         }
         await broadcast(payload)
 
@@ -156,7 +187,7 @@ async def broadcast(payload: Dict[str, Any]):
         if ws in active_websockets:
             active_websockets.remove(ws)
 
-# Auto-start internal sniffer worker if web app is started independently
+# Auto-start internal sniffer worker
 def ensure_sniffer_running():
     global live_sniffer, detection_engine
     if live_sniffer is not None:
@@ -188,6 +219,13 @@ def ensure_sniffer_running():
                 stats["total_bytes"] += pkt.length
                 p_name = pkt.protocol.value
                 stats["protocols"][p_name] = stats["protocols"].get(p_name, 0) + 1
+
+                if pkt.src_ip:
+                    top_talkers_pkts[pkt.src_ip] += 1
+                    top_talkers_bytes[pkt.src_ip] += pkt.length
+                if pkt.dst_ip:
+                    top_talkers_pkts[pkt.dst_ip] += 1
+                    top_talkers_bytes[pkt.dst_ip] += pkt.length
 
                 broadcast_sync({"type": "packet", "packet": pkt_dict})
 
@@ -232,7 +270,7 @@ async def get_status():
     return {
         "diagnostics": EnvironmentChecker.get_diagnostics(),
         "network": NetworkInterfaceManager.get_primary_interface(),
-        "sniffer_engine": getattr(live_sniffer, "active_engine", "NATIVE_RAW_SOCKET") if live_sniffer else "ACTIVE"
+        "sniffer_engine": getattr(live_sniffer, "active_engine", "NATIVE_SOCKET_TELEMETRY") if live_sniffer else "ACTIVE"
     }
 
 @app.get("/api/stats")
@@ -247,12 +285,23 @@ async def get_stats():
         "active_threats": stats["active_threats"],
         "threat_level": threat_level,
         "protocols": stats["protocols"],
-        "throughput": list(throughput_history)
+        "throughput": list(throughput_history),
+        "talkers": get_top_talkers_list(15),
+        "autoblock_enabled": FirewallManager.autoblock_enabled,
+        "blocked_ips": list(FirewallManager.blocked_ips)
     }
 
 @app.get("/api/alerts")
 async def get_alerts():
-    return await Database.get_recent_alerts(limit=Config.ALERT_HISTORY_LIMIT)
+    return list(recent_alerts)[-30:]
+
+@app.get("/api/threats")
+async def get_threats():
+    return list(recent_alerts)[-30:]
+
+@app.get("/api/talkers")
+async def get_talkers():
+    return get_top_talkers_list(20)
 
 @app.get("/api/packets")
 async def get_packets():
@@ -266,13 +315,141 @@ async def get_hosts():
 async def get_sockets():
     return current_sockets
 
-@app.get("/api/protocol-breakdown")
-async def get_protocols():
-    return stats["protocols"]
+@app.post("/api/firewall/block")
+async def block_ip_api(req: BlockReq):
+    res = FirewallManager.block_ip(req.ip, reason=req.reason)
+    await broadcast({"type": "firewall_update", "blocked_ips": list(FirewallManager.blocked_ips)})
+    return res
 
-@app.get("/api/throughput-history")
-async def get_throughput_history():
-    return list(throughput_history)
+@app.post("/api/firewall/unblock")
+async def unblock_ip_api(req: BlockReq):
+    res = FirewallManager.unblock_ip(req.ip)
+    await broadcast({"type": "firewall_update", "blocked_ips": list(FirewallManager.blocked_ips)})
+    return res
+
+@app.post("/api/firewall/toggle-autoblock")
+async def toggle_autoblock():
+    FirewallManager.autoblock_enabled = not FirewallManager.autoblock_enabled
+    stats["autoblock_enabled"] = FirewallManager.autoblock_enabled
+    return {"status": "success", "autoblock_enabled": FirewallManager.autoblock_enabled}
+
+@app.post("/api/simulate-attack")
+async def simulate_attack(req: AttackSimReq):
+    global detection_engine
+    if not detection_engine:
+        from detectors.engine import DetectionEngine
+        detection_engine = DetectionEngine()
+
+    from core.parser import PacketSummary, ProtocolType
+    att_type = req.attack_type.lower()
+    attacker_ip = f"10.173.122.{random.randint(100, 250)}"
+    target_ip = NetworkInterfaceManager.get_primary_interface()["local_ip"]
+
+    # Generate synthetic attack sequence
+    if att_type in ["port_scan", "scan"]:
+        for port in [21, 22, 23, 25, 53, 80, 110, 135, 139, 443, 445, 1433, 3306, 3389, 5432, 8080]:
+            pkt = PacketSummary(
+                id=stats["total_packets"] + 1,
+                timestamp=time.time(),
+                formatted_time=datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3],
+                src_ip=attacker_ip,
+                dst_ip=target_ip,
+                src_port=random.randint(40000, 60000),
+                dst_port=port,
+                protocol=ProtocolType.TCP,
+                length=64,
+                flags="S",
+                summary=f"TCP {attacker_ip} -> {target_ip}:{port} [S] SCAN PROBE",
+                info={},
+                raw_hex_preview="4500003c" + format(port, "04x")
+            )
+            alerts = detection_engine.analyze_packet(pkt)
+            recent_packets.append(pkt.model_dump())
+            stats["total_packets"] += 1
+            for a in alerts:
+                recent_alerts.append(a)
+                stats["alert_count"] += 1
+                stats["active_threats"] += 1
+                broadcast_sync({"type": "alert", "alert": a})
+
+    elif att_type in ["syn_flood", "dos"]:
+        for _ in range(35):
+            pkt = PacketSummary(
+                id=stats["total_packets"] + 1,
+                timestamp=time.time(),
+                formatted_time=datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3],
+                src_ip=attacker_ip,
+                dst_ip=target_ip,
+                src_port=random.randint(40000, 60000),
+                dst_port=80,
+                protocol=ProtocolType.TCP,
+                length=60,
+                flags="S",
+                summary=f"TCP SYN FLOOD {attacker_ip} -> {target_ip}:80",
+                info={},
+                raw_hex_preview="4500003c0050"
+            )
+            alerts = detection_engine.analyze_packet(pkt)
+            recent_packets.append(pkt.model_dump())
+            stats["total_packets"] += 1
+            for a in alerts:
+                recent_alerts.append(a)
+                stats["alert_count"] += 1
+                stats["active_threats"] += 1
+                broadcast_sync({"type": "alert", "alert": a})
+
+    elif att_type in ["icmp_sweep", "ping"]:
+        for i in range(1, 20):
+            pkt = PacketSummary(
+                id=stats["total_packets"] + 1,
+                timestamp=time.time(),
+                formatted_time=datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3],
+                src_ip=attacker_ip,
+                dst_ip=f"192.168.1.{i}",
+                protocol=ProtocolType.ICMP,
+                length=84,
+                flags=None,
+                summary=f"ICMP Echo Request {attacker_ip} -> 192.168.1.{i}",
+                info={},
+                raw_hex_preview="0800f7ff"
+            )
+            alerts = detection_engine.analyze_packet(pkt)
+            recent_packets.append(pkt.model_dump())
+            stats["total_packets"] += 1
+            for a in alerts:
+                recent_alerts.append(a)
+                stats["alert_count"] += 1
+                stats["active_threats"] += 1
+                broadcast_sync({"type": "alert", "alert": a})
+
+    elif att_type in ["dns_tunnel", "dns"]:
+        for _ in range(5):
+            entropy_str = "".join([random.choice("abcdef0123456789") for _ in range(40)])
+            pkt = PacketSummary(
+                id=stats["total_packets"] + 1,
+                timestamp=time.time(),
+                formatted_time=datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3],
+                src_ip=attacker_ip,
+                dst_ip="8.8.8.8",
+                src_port=random.randint(40000, 60000),
+                dst_port=53,
+                protocol=ProtocolType.DNS,
+                length=150,
+                flags=None,
+                summary=f"DNS Tunnel Exfil Query: {entropy_str}.c2-domain.evil",
+                info={"dns_query": f"{entropy_str}.c2-domain.evil"},
+                raw_hex_preview="00010100"
+            )
+            alerts = detection_engine.analyze_packet(pkt)
+            recent_packets.append(pkt.model_dump())
+            stats["total_packets"] += 1
+            for a in alerts:
+                recent_alerts.append(a)
+                stats["alert_count"] += 1
+                stats["active_threats"] += 1
+                broadcast_sync({"type": "alert", "alert": a})
+
+    return {"status": "success", "attack": att_type, "attacker_ip": attacker_ip, "active_threats": stats["active_threats"]}
 
 @app.post("/api/real/scan-subnet")
 async def trigger_subnet_scan(req: SubnetScanReq):
@@ -319,11 +496,13 @@ async def websocket_handler(websocket: WebSocket):
             "type": "init",
             "deps": deps_info,
             "packets": list(recent_packets)[-40:],
-            "alerts": await Database.get_recent_alerts(limit=15),
+            "alerts": list(recent_alerts)[-20:],
             "hosts": await Database.get_all_devices(),
             "sockets": current_sockets[:25],
+            "talkers": get_top_talkers_list(10),
             "stats": stats,
-            "throughput": list(throughput_history)
+            "throughput": list(throughput_history),
+            "blocked_ips": list(FirewallManager.blocked_ips)
         }
         await websocket.send_json(init_payload)
         while True:
