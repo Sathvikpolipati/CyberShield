@@ -251,6 +251,11 @@ async def startup_event():
     asyncio.create_task(ws_broadcast_task())
 
 @app.get("/", response_class=HTMLResponse)
+async def get_landing(request: Request):
+    return templates.TemplateResponse(request=request, name="landing.html")
+
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/soc", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
     net_info = NetworkInterfaceManager.get_primary_interface()
     diag = EnvironmentChecker.get_diagnostics()
