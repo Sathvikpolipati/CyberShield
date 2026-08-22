@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberShield Popup</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span class="icon">🛡️</span>
+            <div>
+                <h1>CYBERSHIELD</h1>
+                <p class="subtitle">Traffic Analyser & Monitor</p>
+            </div>
+        </div>
+        <div id="statusBadge" class="badge nominal">ACTIVE</div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-label">PACKETS</span>
+            <span id="statPackets" class="stat-val">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">BANDWIDTH</span>
+            <span id="statBytes" class="stat-val">0 KB</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">THREATS</span>
+            <span id="statThreats" class="stat-val threat">0</span>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button id="btnScan" class="btn">🔍 Trigger Port Scan</button>
+        <button id="btnSyn" class="btn danger">🌊 Trigger SYN Flood</button>
+    </div>
+
+    <div class="section-title">RECENT ALERTS</div>
+    <div id="alertList" class="alert-list">
+        <div class="empty">No security threats detected.</div>
+    </div>
+
+    <div class="footer">
+        <a href="http://localhost:8000" target="_blank" class="dashboard-link">Open Full Web Dashboard &rarr;</a>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

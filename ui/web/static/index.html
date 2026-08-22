@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberShield | Real-Time Network Scanner, Packet Analyser & Threat Monitor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#060911',
+                            900: '#0B0F19',
+                            800: '#111827',
+                            700: '#1F2937',
+                            600: '#374151',
+                            accent: '#06B6D4',
+                            glow: '#00F0FF',
+                            danger: '#EF4444',
+                            warning: '#F59E0B',
+                            success: '#10B981'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Menlo', 'Courier New', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glow-border { box-shadow: 0 0 15px rgba(6, 182, 212, 0.15); }
+        .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.25); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0B0F19; }
+        ::-webkit-scrollbar-thumb { background: #1F2937; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    </style>
+</head>
+<body class="bg-cyber-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyber-accent selection:text-black">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-cyber-700 bg-cyber-800/90 backdrop-blur sticky top-0 z-40 px-6 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                            CYBERSHIELD <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">v2.0-REALTIME</span>
+                        </h1>
+                    </div>
+                    <p class="text-xs text-slate-400">Live Network Scanner, Device Discovery & Packet Analyser &bull; <span class="text-slate-300">Sathvikpolipati</span></p>
+                </div>
+            </div>
+
+            <!-- View Switcher Tabs -->
+            <div class="flex items-center space-x-2 bg-cyber-950 p-1 rounded-xl border border-cyber-700">
+                <button onclick="switchTab('real')" id="tabBtn-real" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white shadow transition">
+                    🌐 Real Network Scanner
+                </button>
+                <button onclick="switchTab('traffic')" id="tabBtn-traffic" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+                    ⚡ Threat Monitor & DPI
+                </button>
+            </div>
+
+            <!-- Action: Download PDF Report -->
+            <div class="hidden md:flex items-center space-x-3">
+                <a href="/api/real/report/pdf" target="_blank" class="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 text-xs font-mono font-medium transition flex items-center gap-1.5">
+                    <span>📑</span> Export PDF Report
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-1 space-y-6">
+
+        <!-- ================= VIEW 1: REAL NETWORK SCANNER & DEVICE DISCOVERY ================= -->
+        <div id="view-real" class="space-y-6">
+            
+            <!-- Real Network Environment Summary Card -->
+            <div class="bg-gradient-to-r from-cyber-800 via-cyber-800 to-slate-900 border border-cyan-800/60 rounded-xl p-5 shadow-lg">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <h2 class="text-base font-bold text-white tracking-wide">MY LIVE LOCAL NETWORK ENVIRONMENT</h2>
+                        </div>
+                        <p class="text-xs text-slate-400 font-mono">
+                            Host: <strong id="hostName" class="text-cyan-400">Detecting...</strong> | 
+                            Local IP: <strong id="hostIp" class="text-yellow-400">Detecting...</strong> | 
+                            Subnet Scope: <strong id="hostSubnet" class="text-emerald-400">Detecting...</strong>
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button onclick="scanLiveSubnet()" id="btnScanSubnet" class="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold font-mono tracking-wider shadow-lg shadow-cyan-500/20 transition active:scale-95 flex items-center gap-2">
+                            <span id="scanSpinner" class="hidden animate-spin">🌀</span>
+                            <span>🚀 SCAN LOCAL SUBNET NOW</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subnet Discovery Grid (Discovered Live LAN Devices) -->
+            <div class="bg-cyber-800 border border-cyber-700 rounded-xl p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <span>📡</span> Discovered Live Network Devices (LAN Inventory)
+                        </h3>
+                        <p class="text-xs text-slate-400">All active phones, PCs, routers, and IoT devices connected to your Wi-Fi/Ethernet subnet.</p>
+                    </div>
+                    <span id="deviceCountBadge" class="text-xs font-mono px-2.5 py-1 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
+                        0 LIVE DEVICES FOUND
+                    </span>
+                </div>
+
+                <!-- Devices Table -->
+                <div class="overflow-x-auto rounded-lg border border-cyber-700 bg-cyber-900/60 max-h-80 overflow-y-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-cyber-900 sticky top-0 text-slate-400 uppercase border-b border-cyber-700">
+                            <tr>
+                                <th class="py-2.5 px-3">IP Address</th>
+                                <th class="py-2.5 px-3">Hostname</th>
+                                <th class="py-2.5 px-3">MAC / Hardware Address</th>
+                                <th class="py-2.5 px-2">Latency</th>
+                                <th class="py-2.5 px-2 text-center">Status</th>
+                                <th class="py-2.5 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deviceTableBody" class="divide-y divide-cyber-700/50 text-slate-300">
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-slate-500">
+                                    Click <strong>"Scan Local Subnet Now"</strong> to discover all real devices on your network.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Real-Time Process Network Sockets & Connection Monitor -->
+            <div class="bg-cyber-800 border border-cyber-700 rounded-xl p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <span>💻</span> Real Live System Network Connections & Sockets
+                        </h3>
+                        <p class="text-xs text-slate-400">Actual software processes on your PC actively sending/receiving network packets.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="fetchRealConnections()" class="px-2.5 py-1 rounded bg-cyber-700 hover:bg-cyber-600 text-xs font-mono text-white transition">
+                            🔄 Refresh Connections
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Connections Table -->
+                <div class="overflow-x-auto rounded-lg border border-cyber-700 bg-cyber-900/60 max-h-72 overflow-y-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-cyber-900 sticky top-0 text-slate-400 uppercase border-b border-cyber-700">
+                            <tr>
+                                <th class="py-2 px-3">Protocol</th>
+                                <th class="py-2 px-3">Process Name (PID)</th>
+                                <th class="py-2 px-3">Local Address</th>
+                                <th class="py-2 px-3">Remote Address</th>
+                                <th class="py-2 px-2 text-center">Socket State</th>
+                            </tr>
+                        </thead>
+                        <tbody id="connectionTableBody" class="divide-y divide-cyber-700/50 text-slate-300">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW 2: PACKET INSPECTION & THREAT MONITOR ================= -->
+        <div id="view-traffic" class="space-y-6 hidden">
+            <!-- Top Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-cyber-800 border border-cyber-700 rounded-xl p-5 glow-border">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Packets</p>
+                    <h3 id="statPackets" class="text-2xl font-bold font-mono text-white mt-1">0</h3>
+                    <p class="mt-2 text-xs text-cyan-400 font-mono"><span id="statRate">0.0</span> pkt/s live rate</p>
+                </div>
+                <div class="bg-cyber-800 border border-cyber-700 rounded-xl p-5 glow-border">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Bandwidth Monitored</p>
+                    <h3 id="statBytes" class="text-2xl font-bold font-mono text-white mt-1">0 KB</h3>
+                    <p class="mt-2 text-xs text-blue-400 font-mono"><span id="statBps">0.0</span> KB/s throughput</p>
+                </div>
+                <div class="bg-cyber-800 border border-cyber-700 rounded-xl p-5">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Security Incidents</p>
+                    <h3 id="statAlerts" class="text-2xl font-bold font-mono text-red-400 mt-1">0</h3>
+                    <p class="mt-2 text-xs text-red-400 font-mono"><span id="statCrit">0</span> High / Critical</p>
+                </div>
+                <div class="bg-cyber-800 border border-cyber-700 rounded-xl p-5">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Network Status</p>
+                    <h3 id="statThreatLevel" class="text-2xl font-bold font-mono text-emerald-400 mt-1">NOMINAL</h3>
+                    <p class="mt-2 text-xs text-emerald-400 font-mono" id="statUptime">Uptime: 0s</p>
+                </div>
+            </div>
+
+            <!-- Threat Simulator Action Bar -->
+            <div class="bg-cyber-800 border border-cyan-800/60 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">⚡</div>
+                    <div>
+                        <h4 class="text-xs font-bold text-white uppercase tracking-wider">Test Anomaly Detectors</h4>
+                        <p class="text-xs text-slate-400">Inject test security events to verify automated alert triggers.</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="triggerSimulatedAttack('port_scan')" class="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 text-xs font-mono">🔍 Port Scan</button>
+                    <button onclick="triggerSimulatedAttack('syn_flood')" class="px-3 py-1.5 rounded-lg bg-red-950 hover:bg-red-900 text-red-300 border border-red-700 text-xs font-mono">🌊 SYN Flood</button>
+                    <button onclick="triggerSimulatedAttack('icmp_sweep')" class="px-3 py-1.5 rounded-lg bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 text-xs font-mono">📡 Ping Sweep</button>
+                    <button onclick="triggerSimulatedAttack('dns_exfiltration')" class="px-3 py-1.5 rounded-lg bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-700 text-xs font-mono">🕵️ DNS Exfil</button>
+                </div>
+            </div>
+
+            <!-- Packet Stream & Threat Feed Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left: Packet Stream -->
+                <div class="lg:col-span-7 bg-cyber-800 border border-cyber-700 rounded-xl p-5 flex flex-col h-[480px]">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Packet Stream
+                        </h3>
+                    </div>
+                    <div class="overflow-y-auto flex-1 rounded-lg border border-cyber-700 bg-cyber-900/60">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-cyber-900 sticky top-0 text-slate-400 uppercase border-b border-cyber-700">
+                                <tr>
+                                    <th class="py-2 px-3">Time</th>
+                                    <th class="py-2 px-2">Proto</th>
+                                    <th class="py-2 px-3">Source &rarr; Target</th>
+                                    <th class="py-2 px-3">Summary</th>
+                                </tr>
+                            </thead>
+                            <tbody id="packetTableBody" class="divide-y divide-cyber-700/50 text-slate-300">
+                                <!-- Injected dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Alert Feed -->
+                <div class="lg:col-span-5 bg-cyber-800 border border-cyber-700 rounded-xl p-5 flex flex-col h-[480px]">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-red-500"></span> Incident Alerts Feed
+                        </h3>
+                        <span id="alertCountBadge" class="text-xs font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800">0 EVENTS</span>
+                    </div>
+                    <div id="alertContainer" class="overflow-y-auto flex-1 space-y-3">
+                        <div id="noAlertsMsg" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                            <p class="text-sm font-medium text-slate-400">Zero Active Threats Detected</p>
+                            <p class="text-xs text-slate-500 mt-1">Network traffic is nominal.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Target Port Scan Modal -->
+    <div id="portScanModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-800 border border-cyber-600 rounded-xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-cyber-700 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span>🔍</span> Target Port & Vulnerability Scan: <span id="modalTargetIp" class="text-cyan-400 font-mono"></span>
+                </h3>
+                <button onclick="document.getElementById('portScanModal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+            <div id="portScanResults" class="space-y-3 font-mono text-xs text-slate-300 max-h-[60vh] overflow-y-auto">
+                <p class="text-center py-6 text-slate-400">Scanning common administrative & service ports...</p>
+            </div>
+            <div class="flex justify-end pt-2 border-t border-cyber-700">
+                <button onclick="document.getElementById('portScanModal').classList.add('hidden')" class="px-4 py-1.5 rounded-lg bg-cyber-700 hover:bg-cyber-600 text-white text-xs font-mono">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frontend JavaScript Logic -->
+    <script>
+        let currentTab = 'real';
+        let packetsCache = [];
+        let alertsCache = [];
+
+        function switchTab(tab) {
+            currentTab = tab;
+            if (tab === 'real') {
+                document.getElementById('view-real').classList.remove('hidden');
+                document.getElementById('view-traffic').classList.add('hidden');
+                document.getElementById('tabBtn-real').className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white shadow transition';
+                document.getElementById('tabBtn-traffic').className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+                fetchRealConnections();
+            } else {
+                document.getElementById('view-real').classList.add('hidden');
+                document.getElementById('view-traffic').classList.remove('hidden');
+                document.getElementById('tabBtn-traffic').className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white shadow transition';
+                document.getElementById('tabBtn-real').className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+            }
+        }
+
+        // Fetch Local Network Info
+        async function loadNetworkInfo() {
+            try {
+                const res = await fetch('/api/real/info');
+                if (!res.ok) return;
+                const info = await res.json();
+                document.getElementById('hostName').textContent = info.hostname;
+                document.getElementById('hostIp').textContent = info.local_ip;
+                document.getElementById('hostSubnet').textContent = info.subnet;
+            } catch (e) {}
+        }
+
+        // Scan Real Subnet
+        async function scanLiveSubnet() {
+            const btn = document.getElementById('btnScanSubnet');
+            const spinner = document.getElementById('scanSpinner');
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/real/scan-subnet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                renderDiscoveredDevices(data.devices || []);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function renderDiscoveredDevices(devices) {
+            const tbody = document.getElementById('deviceTableBody');
+            document.getElementById('deviceCountBadge').textContent = `${devices.length} LIVE DEVICES FOUND`;
+
+            if (devices.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">No active LAN devices responded to probe.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = devices.map(d => `
+                <tr class="hover:bg-cyber-800/80 transition">
+                    <td class="py-2.5 px-3 font-bold text-cyan-400">${d.ip}</td>
+                    <td class="py-2.5 px-3 text-white">${d.hostname}</td>
+                    <td class="py-2.5 px-3 text-slate-400 font-mono">${d.mac}</td>
+                    <td class="py-2.5 px-2 text-slate-400">${d.latency_ms} ms</td>
+                    <td class="py-2.5 px-2 text-center"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">ONLINE</span></td>
+                    <td class="py-2.5 px-3 text-right">
+                        <button onclick="scanTargetPorts('${d.ip}')" class="px-2.5 py-1 rounded bg-cyber-700 hover:bg-cyan-700 text-cyan-200 text-xs font-mono transition">
+                            Scan Ports
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Scan Specific Target Ports
+        async function scanTargetPorts(targetIp) {
+            document.getElementById('modalTargetIp').textContent = targetIp;
+            document.getElementById('portScanResults').innerHTML = `<p class="text-center py-6 text-slate-400">Scanning common administrative & service ports on ${targetIp}...</p>`;
+            document.getElementById('portScanModal').classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/real/scan-ports', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_ip: targetIp })
+                });
+                const data = await res.json();
+                
+                let portRows = (data.open_ports || []).map(p => `
+                    <div class="p-2.5 rounded bg-cyber-900 border border-cyber-700 flex items-center justify-between">
+                        <div>
+                            <span class="text-cyan-400 font-bold">Port ${p.port}</span> (${p.service})
+                            <div class="text-[10px] text-slate-400">${p.description}</div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.risk === 'HIGH' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}">${p.risk} RISK</span>
+                    </div>
+                `).join('');
+
+                if (!data.open_ports || data.open_ports.length === 0) {
+                    portRows = `<div class="p-4 text-center text-slate-400">No common open ports detected (Host is filtered / firewall active).</div>`;
+                }
+
+                document.getElementById('portScanResults').innerHTML = `
+                    <div class="p-3 rounded bg-cyber-900/90 border border-cyan-800 mb-3">
+                        <p class="font-bold text-white">Security Posture Score: <span class="text-cyan-400">${data.risk_score}/100</span></p>
+                        <p class="text-xs text-slate-300 mt-1">${data.security_assessment}</p>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-xs text-slate-400 font-bold">Open Ports & Services (${data.open_ports_count}):</p>
+                        ${portRows}
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('portScanResults').innerHTML = `<p class="text-center py-6 text-red-400">Failed to scan target: ${e.message}</p>`;
+            }
+        }
+
+        // Fetch Real Live Process Connections
+        async function fetchRealConnections() {
+            try {
+                const res = await fetch('/api/real/connections?limit=60');
+                if (!res.ok) return;
+                const data = await res.json();
+                const tbody = document.getElementById('connectionTableBody');
+
+                tbody.innerHTML = (data.connections || []).map(c => `
+                    <tr class="hover:bg-cyber-800/80 transition">
+                        <td class="py-2 px-3"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${c.proto === 'TCP' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' : 'bg-blue-950 text-blue-400 border border-blue-800'}">${c.proto}</span></td>
+                        <td class="py-2 px-3 font-semibold text-white">${c.process} <span class="text-slate-500 text-[10px]">(${c.pid || '--'})</span></td>
+                        <td class="py-2 px-3 text-cyan-300 font-mono">${c.local}</td>
+                        <td class="py-2 px-3 text-yellow-300 font-mono">${c.remote}</td>
+                        <td class="py-2 px-2 text-center"><span class="px-1.5 py-0.5 rounded text-[10px] font-mono ${c.status === 'LISTEN' ? 'bg-purple-950 text-purple-400 border border-purple-800 font-bold' : (c.status === 'ESTABLISHED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400')}">${c.status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (e) {}
+        }
+
+        // Trigger Simulated Attack
+        async function triggerSimulatedAttack(type) {
+            try {
+                await fetch('/api/simulate/attack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ attack_type: type })
+                });
+            } catch (e) {}
+        }
+
+        // WebSocket for Traffic Stream
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${protocol}//${window.location.host}/ws/live`);
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'init') {
+                    packetsCache = data.packets || [];
+                    alertsCache = data.alerts || [];
+                    renderTrafficPackets();
+                    renderTrafficAlerts();
+                } else if (data.type === 'packet') {
+                    packetsCache.unshift(data.packet);
+                    if (packetsCache.length > 200) packetsCache.pop();
+                    renderTrafficPackets();
+                } else if (data.type === 'alert') {
+                    alertsCache.unshift(data.alert);
+                    renderTrafficAlerts();
+                } else if (data.type === 'stats') {
+                    updateTrafficStats(data.stats);
+                }
+            };
+            ws.onclose = () => setTimeout(initWebSocket, 2000);
+        }
+
+        function updateTrafficStats(stats) {
+            document.getElementById('statPackets').textContent = stats.total_packets.toLocaleString();
+            document.getElementById('statBytes').textContent = `${(stats.total_bytes / 1024).toFixed(1)} KB`;
+            document.getElementById('statRate').textContent = stats.packets_per_sec.toFixed(1);
+            document.getElementById('statBps').textContent = (stats.bytes_per_sec / 1024).toFixed(1);
+            const totalThreats = (stats.alert_counts.HIGH || 0) + (stats.alert_counts.CRITICAL || 0) + (stats.alert_counts.MEDIUM || 0);
+            document.getElementById('statAlerts').textContent = totalThreats;
+            document.getElementById('statCrit').textContent = (stats.alert_counts.CRITICAL || 0) + (stats.alert_counts.HIGH || 0);
+        }
+
+        function renderTrafficPackets() {
+            const tbody = document.getElementById('packetTableBody');
+            tbody.innerHTML = packetsCache.slice(0, 25).map(pkt => `
+                <tr class="hover:bg-cyber-800/80 transition">
+                    <td class="py-1.5 px-3 text-slate-500">${pkt.formatted_time.split('.')[0]}</td>
+                    <td class="py-1.5 px-2"><span class="px-1 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">${pkt.protocol}</span></td>
+                    <td class="py-1.5 px-3"><span class="text-cyan-400">${pkt.src_ip}</span> &rarr; <span class="text-yellow-400">${pkt.dst_ip}</span></td>
+                    <td class="py-1.5 px-3 truncate max-w-xs text-slate-400">${pkt.summary}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTrafficAlerts() {
+            const container = document.getElementById('alertContainer');
+            const noMsg = document.getElementById('noAlertsMsg');
+            document.getElementById('alertCountBadge').textContent = `${alertsCache.length} EVENTS`;
+
+            if (alertsCache.length === 0) {
+                if (noMsg) noMsg.classList.remove('hidden');
+                return;
+            }
+
+            container.innerHTML = alertsCache.slice(0, 10).map(alt => `
+                <div class="p-3 rounded-xl border border-red-800 bg-red-950/40 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-900 text-white">${alt.severity}</span>
+                        <span class="text-[10px] text-slate-400">${alt.formatted_time || ''}</span>
+                    </div>
+                    <h4 class="text-xs font-bold text-white">${alt.rule_name}</h4>
+                    <p class="text-xs text-slate-300">${alt.description}</p>
+                </div>
+            `).join('');
+        }
+
+        // Init on page load
+        loadNetworkInfo();
+        fetchRealConnections();
+        initWebSocket();
+        setInterval(fetchRealConnections, 5000);
+    </script>
+</body>
+</html>

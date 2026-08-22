@@ -15,10 +15,10 @@
 2. [Dual-Layer Active Threat Defense Engine](#-dual-layer-active-threat-defense-engine)
 3. [Multi-Mode Modular Execution](#-multi-mode-modular-execution)
 4. [Installation & Setup by Platform](#-installation--setup-by-platform)
-   * [Windows (PowerShell / Windows Terminal / CMD / VS Code)](#-windows-powershell--windows-terminal--cmd--vs-code)
-   * [Linux (Ubuntu, Debian, Kali Linux, Arch, Fedora)](#-linux-ubuntu-debian-kali-linux-arch-fedora)
-   * [Android Termux (1-Click Automated Setup)](#-android-termux-1-click-automated-setup)
-   * [macOS](#-macos)
+   * [🪟 Windows (PowerShell / Windows Terminal / CMD / VS Code)](#-windows-powershell--windows-terminal--cmd--vs-code)
+   * [🐧 Linux (Ubuntu, Debian, Kali Linux, Arch, Fedora)](#-linux-ubuntu-debian-kali-linux-arch-fedora)
+   * [📱 Android Termux (1-Click Automated Setup)](#-android-termux-1-click-automated-setup)
+   * [🍎 macOS](#-macos)
 5. [Complete Operational Command Manual](#-complete-operational-command-manual)
 6. [Interactive Shell Commands Reference](#-interactive-shell-commands-reference)
 7. [Automated Security Test Suite](#-automated-security-test-suite)
@@ -119,7 +119,7 @@ cd Network-Traffic-Analyser-SOC
 
 # 2. Create and activate Python virtual environment
 python -m venv venv
-.\\venv\\Scripts\\activate
+.\venv\Scripts\activate
 
 # 3. Install dependencies
 pip install -r requirements.txt
