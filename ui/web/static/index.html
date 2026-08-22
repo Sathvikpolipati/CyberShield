@@ -3,1092 +3,1300 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Security built into every system layer | CyberShield</title>
+<title>CyberShield SOC | Multi-Platform Network Traffic Analyzer & Active Threat Defense</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-@font-face {
-  font-family: 'SG';
-  src: url('https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPb54C_k3.woff2') format('woff2');
-  font-display: block;
-  font-weight: 300 700;
-}
-@font-face {
-  font-family: 'JB';
-  src: url('https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxTOlOV.woff2') format('woff2');
-  font-display: block;
-  font-weight: 300 800;
-}
-
+/* === DESIGN TOKENS === */
 :root {
-  --s: min(100vw / 1505, 100vh / 700);
-  --red: #c81b1c;
-  --red-hover: #b01617;
-  --ink: #fff;
-  --sub: #e6e6e6;
-  --lab: #949494;
-  --bx: 60;
-  --by: 36;
-  --bs: 44;
-  --h1y: -12.5;
-  --suby: 167.5;
-  --numy: 19;
-  --laby: 74;
+  --blue-primary: #1d6dff;
+  --blue-hover: #1350cc;
+  --blue-glow: rgba(29, 109, 255, 0.4);
+  --cyan-accent: #00dcff;
+  --white-glow: rgba(255, 255, 255, 0.85);
+  --ink: #ffffff;
+  --sub: #cbd5e1;
+  --muted: #64748b;
+  --bg-deep: #000000;
+  --glass-bg: rgba(6, 12, 28, 0.72);
+  --glass-border: rgba(29, 109, 255, 0.22);
 }
 
-@media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
-  :root {
-    --s: clamp(0.82px, min(100vw / 900, 100vh / 1200), 1.25px);
-    --bx: 56;
-    --by: 33;
-    --bs: 40;
-    --h1y: -10.25;
-    --suby: 137.4;
-    --numy: 15.6;
-    --laby: 60.7;
-  }
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@media (max-width: 599px) {
-  :root {
-    --s: min(100vw / 430, 100vh / 620, 1.02px);
-    --bx: 26;
-    --by: 21;
-    --bs: 34;
-    --h1y: -7.1;
-    --suby: 108;
-    --numy: 13;
-    --laby: 50;
-  }
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
-  background: #000;
-  color: var(--ink);
-  overflow: hidden;
-  font-family: 'JB', monospace;
-}
+html { scroll-behavior: smooth; }
 
 body {
+  background: var(--bg-deep);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
+  overflow-x: hidden;
 }
 
-.probe {
-  position: absolute;
-  visibility: hidden;
-  width: calc(100 * var(--s));
-  height: 0;
-}
-
-.svgdefs {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-/* 4. Background Video Layers */
-.screen {
+/* === BLUE & WHITE ANIMATED CYBER CANVAS (60FPS STABLE) === */
+#cyberCanvas {
   position: fixed;
   inset: 0;
-  overflow: hidden;
-  background: #000;
-}
-
-.bg, .bg2 {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
   pointer-events: none;
 }
 
-.bg {
-  filter: url(#grade);
-}
-
-.bg video, .bg2 video {
-  position: absolute;
+/* Glassmorphism background scrim */
+.bg-scrim {
+  position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center top;
-  display: block;
-}
-
-.bg2 {
-  filter: url(#grade2);
-  mix-blend-mode: plus-lighter;
-  opacity: .35;
-  -webkit-mask-image: linear-gradient(180deg, transparent 21.5%, #000 100%);
-  mask-image: linear-gradient(180deg, transparent 21.5%, #000 100%);
-}
-
-.scrim {
-  position: absolute;
-  inset: 0;
+  z-index: 1;
   pointer-events: none;
-  display: none;
+  background:
+    radial-gradient(ellipse 70% 60% at 75% 30%, rgba(29, 109, 255, 0.16) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(0, 220, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.75) 50%, rgba(0, 0, 0, 0.95) 100%);
 }
 
-@media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
-  .bg2 { display: none; }
-  .bg video {
-    object-position: right top;
-    transform: scale(1.18);
-    transform-origin: right top;
-  }
-  .bg {
-    -webkit-mask-image: linear-gradient(180deg, #000 0 40%, transparent 64%);
-    mask-image: linear-gradient(180deg, #000 0 40%, transparent 64%);
-  }
-  .scrim {
-    display: block;
-    background: linear-gradient(100deg, #000 26%, rgba(0,0,0,.74) 50%, rgba(0,0,0,.18) 76%, transparent 92%);
-  }
-}
+.site-wrap { position: relative; z-index: 10; }
 
-@media (max-width: 599px) {
-  .bg video, .bg2 video {
-    object-position: 78% top;
-  }
-  .bg2 {
-    display: block;
-    -webkit-mask-image: linear-gradient(180deg, transparent 10%, #000 60%);
-    mask-image: linear-gradient(180deg, transparent 10%, #000 60%);
-  }
-  .scrim {
-    display: block;
-    background: linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.50) 24%, rgba(0,0,0,.86) 42%, #000 66%);
-  }
-}
-
-/* 5. Exact DOM Structure & Frame */
-.frame {
-  position: relative;
-  z-index: 10;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.sp {
-  flex-grow: 1;
-}
-.sp-a { flex-grow: 239; }
-.sp-b { flex-grow: 194; }
-.sp-c { flex-grow: 115; }
-
-@media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
-  .sp-a { flex-grow: 340; }
-  .sp-b { flex-grow: 276; }
-  .sp-c { flex-grow: 163; }
-}
-@media (max-width: 599px) {
-  .sp-a { flex-grow: 106; }
-  .sp-b { flex-grow: 92; }
-  .sp-c { flex-grow: 56; }
-}
-
-/* Header */
-header {
-  position: relative;
-  height: calc(90 * var(--s));
-  width: 100%;
+/* === NAVIGATION BAR === */
+nav.top-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 70px;
   display: flex;
   align-items: center;
+  padding: 0 48px;
+  background: rgba(2, 6, 18, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--glass-border);
+  gap: 32px;
 }
 
-.logo-wrap {
-  position: absolute;
-  left: calc(60 * var(--s));
-  top: calc(35 * var(--s));
-  width: calc(45 * var(--s));
-  height: calc(45 * var(--s));
+.nav-logo {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
   text-decoration: none;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(29, 109, 255, 0.1);
+  border: 1px solid rgba(29, 109, 255, 0.3);
+  transition: all 0.25s;
+}
+.nav-logo:hover {
+  background: rgba(29, 109, 255, 0.18);
+  border-color: var(--blue-primary);
+  box-shadow: 0 0 16px rgba(29, 109, 255, 0.3);
 }
 
-.logo-svg {
-  width: 100%;
-  height: 100%;
+.shield-svg {
+  width: 28px;
+  height: 32px;
+  filter: drop-shadow(0 0 6px rgba(29, 109, 255, 0.8));
 }
 
-nav.main-nav {
-  position: absolute;
-  left: calc(482 * var(--s));
-  top: calc(32 * var(--s));
-  height: calc(58 * var(--s));
-  display: flex;
-  align-items: center;
-}
-
-.nav-link {
-  font-family: 'JB', monospace;
-  font-weight: 400;
-  font-size: calc(19.9 * var(--s));
-  color: #fff;
-  text-decoration: none;
-  margin-right: calc(40 * var(--s));
-  display: inline-flex;
-  align-items: center;
-  gap: calc(6 * var(--s));
-  transition: color 0.2s ease;
-}
-
-.nav-link:nth-child(2) {
-  margin-left: calc(13 * var(--s));
-}
-.nav-link:nth-child(4) {
-  margin-left: calc(-3 * var(--s));
-}
-
-@media (hover: hover) {
-  .nav-link:hover {
-    color: var(--red);
-  }
-}
-
-.chevron-svg {
-  width: calc(11.6 * var(--s));
-  height: calc(7.2 * var(--s));
-  margin-top: calc(-2.6 * var(--s));
-  stroke: currentColor;
-  stroke-width: 1.7;
-  fill: none;
-}
-
-/* Top Button */
-.btn-top-wrap {
-  position: absolute;
-  left: calc(1232 * var(--s));
-  top: calc(30 * var(--s));
-}
-
-/* Shared Button Styles */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--red);
-  color: #fff;
-  text-decoration: none;
-  border-radius: 0 !important; /* Sharp corners */
-  border: none;
-  cursor: pointer;
-  width: calc(212 * var(--s));
-  height: calc(58 * var(--s));
-  padding-left: calc(18 * var(--s));
-  padding-right: calc(22 * var(--s));
-  gap: calc(11 * var(--s));
-  font-family: 'SG', sans-serif;
-  font-weight: 480;
-  font-size: calc(20.85 * var(--s));
-  letter-spacing: calc(-0.62 * var(--s));
-  transition: background-color 0.2s ease;
-}
-
-.btn span {
-  transform: translateY(calc(1.5 * var(--s)));
-}
-
-.btn svg {
-  width: calc(21.5 * var(--s));
-  height: calc(18 * var(--s));
-  stroke: #fff;
-  stroke-width: 2;
-  fill: none;
-  transition: transform 0.2s ease;
-}
-
-@media (hover: hover) {
-  .btn:hover {
-    background: var(--red-hover);
-  }
-  .btn:hover svg {
-    transform: translateX(calc(3 * var(--s)));
-  }
-}
-
-@media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
-  .btn {
-    width: calc(174 * var(--s));
-    height: calc(47.6 * var(--s));
-    padding-left: calc(14.8 * var(--s));
-    padding-right: calc(18 * var(--s));
-    gap: calc(9 * var(--s));
-    font-size: calc(17.1 * var(--s));
-  }
-}
-
-@media (max-width: 599px) {
-  .btn {
-    width: calc(185 * var(--s));
-    height: calc(50 * var(--s));
-    padding-left: calc(15.7 * var(--s));
-    padding-right: calc(19.1 * var(--s));
-    gap: calc(9.6 * var(--s));
-    font-size: calc(17.5 * var(--s));
-  }
-}
-
-/* Burger Button */
-.burger-btn {
-  display: none;
-  position: absolute;
-  left: calc(var(--bx) * var(--s));
-  top: calc(var(--by) * var(--s));
-  width: calc(var(--bs) * var(--s));
-  height: calc(var(--bs) * var(--s));
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  z-index: 60;
-  flex-direction: column;
-  justify-content: space-around;
-  padding: calc(6 * var(--s)) 0;
-}
-
-.burger-bar {
-  width: 100%;
-  height: calc(2.5 * var(--s));
-  background: #fff;
-  transition: all 0.3s cubic-bezier(.2,.7,.2,1);
-  transform-origin: center;
-}
-
-.burger-bar:nth-child(3) {
-  width: 47%;
-}
-
-.nav-open .burger-bar:nth-child(1) {
-  transform: translateY(calc(10 * var(--s))) rotate(45deg);
-}
-.nav-open .burger-bar:nth-child(2) {
-  opacity: 0;
-}
-.nav-open .burger-bar:nth-child(3) {
-  width: 100%;
-  transform: translateY(calc(-10 * var(--s))) rotate(-45deg);
-}
-
-@media (max-width: 1023px) {
-  nav.main-nav, .btn-top-wrap { display: none; }
-  .burger-btn { display: flex; }
-}
-
-/* Hero Section */
-section.hero {
-  position: relative;
-  width: 100%;
-  padding-left: calc(73 * var(--s));
-}
-
-h1 {
-  font-family: 'SG', sans-serif;
+.nav-brand {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
   font-weight: 700;
-  font-size: calc(68.7 * var(--s));
-  line-height: calc(76 * var(--s));
-  letter-spacing: calc(-2.4 * var(--s));
-  color: #fff;
-  margin-top: calc(var(--h1y) * var(--s));
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #ffffff 0%, #60a5fa 50%, #1d6dff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-h1 .ln {
-  display: block;
-  overflow: hidden;
-  padding-bottom: calc(6 * var(--s));
-  margin-bottom: calc(-6 * var(--s));
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  list-style: none;
+  margin-left: auto;
 }
 
-h1 .ln span {
-  display: block;
-}
-
-.sub {
-  font-family: 'JB', monospace;
-  font-weight: 400;
-  font-size: calc(18.7 * var(--s));
-  line-height: calc(26 * var(--s));
-  letter-spacing: calc(-0.87 * var(--s));
+.nav-links a {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--sub);
-  margin-top: calc(var(--suby) * var(--s) - (68.7 * var(--s) * 1.5));
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: #60a5fa; }
+
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--blue-primary);
+  color: #fff !important;
+  text-decoration: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  transition: background 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.btn-nav:hover {
+  background: var(--blue-hover);
+  box-shadow: 0 0 18px var(--blue-glow);
 }
 
-.hero-cta-wrap {
-  margin-top: calc(36 * var(--s));
+.burger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+}
+.burger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: #fff;
+  margin: 5px 0;
+  border-radius: 2px;
+  transition: all 0.3s;
 }
 
-/* Stats Section */
-section.stats {
+@media(max-width:900px) {
+  nav.top-nav { padding: 0 20px; }
+  .nav-links { display: none; }
+  .burger { display: flex; flex-direction: column; margin-left: auto; }
+  .btn-nav.top-cta { display: none; }
+}
+
+/* === HERO SECTION === */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 120px 72px 80px;
   position: relative;
-  width: 100%;
-  height: calc(85 * var(--s));
 }
+
+/* Hero Title with integrated colorful Shield and Gradient Brand Text */
+h1.hero-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(32px, 5.2vw, 68px);
+  font-weight: 700;
+  letter-spacing: -2px;
+  line-height: 1.1;
+  max-width: 900px;
+  margin-bottom: 24px;
+  color: #ffffff;
+}
+
+.hero-brand-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.hero-shield-icon {
+  width: clamp(36px, 5.5vw, 68px);
+  height: clamp(42px, 6.2vw, 76px);
+  filter: drop-shadow(0 0 12px rgba(0, 220, 255, 0.75));
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.hero-brand-colorful {
+  background: linear-gradient(135deg, #ffffff 0%, #00dcff 35%, #60a5fa 70%, #1d6dff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -1.5px;
+}
+
+.hero-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(13px, 1.35vw, 16px);
+  line-height: 1.75;
+  color: var(--sub);
+  max-width: 720px;
+  margin-bottom: 38px;
+  letter-spacing: -0.3px;
+}
+
+.hero-desc strong { color: #ffffff; font-weight: 600; }
+
+.hero-cta-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: var(--blue-primary);
+  color: #ffffff;
+  text-decoration: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  border: 2px solid var(--blue-primary);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background: var(--blue-hover);
+  border-color: var(--blue-hover);
+  box-shadow: 0 0 24px var(--blue-glow);
+  transform: translateY(-1px);
+}
+.btn-primary svg { width: 18px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: rgba(8, 16, 38, 0.6);
+  color: #93c5fd;
+  text-decoration: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  border: 2px solid rgba(29, 109, 255, 0.35);
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+}
+.btn-secondary:hover {
+  background: rgba(29, 109, 255, 0.15);
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+/* Platform Badges */
+.platform-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(6, 12, 28, 0.7);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  color: var(--sub);
+  font-weight: 500;
+}
+.badge.active {
+  border-color: rgba(29, 109, 255, 0.4);
+  color: #ffffff;
+  background: rgba(29, 109, 255, 0.12);
+}
+
+@media(max-width:600px) {
+  .hero { padding: 100px 20px 60px; }
+  h1.hero-title { letter-spacing: -1px; }
+  .hero-brand-line { gap: 10px; }
+}
+
+/* === SECTION COMMON === */
+section { padding: 96px 72px; position: relative; }
+@media(max-width:600px) { section { padding: 64px 20px; } }
+
+.section-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #60a5fa;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(26px, 3.5vw, 44px);
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  margin-bottom: 16px;
+  color: #ffffff;
+}
+
+.section-sub {
+  font-size: 14px;
+  color: var(--sub);
+  max-width: 620px;
+  line-height: 1.7;
+  margin-bottom: 52px;
+}
+
+/* === STATS STRIP === */
+.stats-strip {
+  padding: 32px 72px;
+  background: rgba(4, 8, 22, 0.78);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  overflow-x: auto;
+}
+@media(max-width:600px) { .stats-strip { padding: 24px; gap: 32px; } }
 
 .stat-item {
-  position: absolute;
-  top: 0;
-}
-
-.stat-item.s1 { left: calc(70.4 * var(--s)); }
-.stat-item.s2 { left: calc(213.1 * var(--s)); }
-.stat-item.s3 { left: calc(392.6 * var(--s)); }
-
-.stat-num {
-  font-family: 'JB', monospace;
-  font-weight: 480;
-  font-size: calc(33.45 * var(--s));
-  color: #fff;
-}
-
-.stat-item.s3 .stat-num {
-  margin-left: calc(-4.4 * var(--s));
-}
-
-.stat-lab {
-  font-family: 'SG', sans-serif;
-  font-weight: 400;
-  font-size: calc(21.9 * var(--s));
-  letter-spacing: calc(-0.62 * var(--s));
-  color: var(--lab);
-  margin-top: calc(4 * var(--s));
-}
-
-.v-rule {
-  position: absolute;
-  top: calc(4 * var(--s));
-  height: calc(60 * var(--s));
-  width: calc(1.5 * var(--s));
-  background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.21) 50%, rgba(255,255,255,.085));
-}
-
-.v-rule.r1 { left: calc(181 * var(--s)); }
-.v-rule.r2 { left: calc(356 * var(--s)); }
-
-/* Mobile Menu Overlay */
-.menu {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 50;
   display: flex;
   flex-direction: column;
-  padding: calc(100 * var(--s)) calc(40 * var(--s)) calc(40 * var(--s));
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
+  align-items: flex-start;
+  padding: 0 44px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 1;
+  min-width: 160px;
 }
+.stat-item:first-child { padding-left: 0; }
+.stat-item:last-child { border-right: none; }
 
-.nav-open .menu {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.menu-tex {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  opacity: 0.4;
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 40%);
-  mask-image: linear-gradient(180deg, transparent 0%, #000 40%);
-}
-
-.menu-tex video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.menu-rule {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: var(--red);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.55s cubic-bezier(.2,.7,.2,1) 0.04s;
-}
-
-.nav-open .menu-rule {
-  transform: scaleX(1);
-}
-
-.menu-eyebrow {
-  font-family: 'JB', monospace;
-  font-size: calc(11.5 * var(--s));
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--lab);
-  margin-bottom: calc(24 * var(--s));
-}
-
-.menu-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: calc(18 * var(--s));
-  flex-grow: 1;
-}
-
-.mrow {
-  font-family: 'SG', sans-serif;
+.stat-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px;
   font-weight: 700;
-  font-size: calc(32 * var(--s));
-  color: #fff;
-  text-decoration: none;
-  cursor: pointer;
+  letter-spacing: -1px;
+  color: #ffffff;
+}
+.stat-value span { color: #60a5fa; }
+
+.stat-key {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* === CORE CAPABILITIES (FEATURES GRID - REFINED CLEAN DARK STYLE) === */
+.features-section { background: rgba(2, 4, 12, 0.65); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.feature-card {
+  background: rgba(6, 12, 28, 0.85);
+  border: 1px solid rgba(29, 109, 255, 0.2);
+  padding: 32px 28px;
+  position: relative;
+  transition: all 0.25s;
+  backdrop-filter: blur(12px);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: space-between;
 }
 
-.m-sublinks {
-  list-style: none;
-  padding-left: calc(16 * var(--s));
-  margin-top: calc(8 * var(--s));
-  display: none;
-  flex-direction: column;
-  gap: calc(8 * var(--s));
+.feature-card:hover {
+  border-color: rgba(29, 109, 255, 0.55);
+  background: rgba(8, 16, 40, 0.95);
+  box-shadow: 0 0 30px rgba(29, 109, 255, 0.15);
+  transform: translateY(-2px);
 }
 
-.m-sublinks.open {
-  display: flex;
+.feat-icon {
+  font-size: 26px;
+  margin-bottom: 16px;
+  display: inline-block;
 }
 
-.m-sublink {
-  font-family: 'JB', monospace;
-  font-size: calc(14 * var(--s));
+.feat-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+
+.feat-desc {
+  font-size: 13px;
+  line-height: 1.7;
   color: var(--sub);
-  text-decoration: none;
+  margin-bottom: 20px;
 }
 
-.menu-footer {
+.feat-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #93c5fd;
+  text-decoration: none;
   margin-top: auto;
+  transition: color 0.2s;
+}
+.feature-card:hover .feat-action { color: #ffffff; }
+
+/* === HOW IT WORKS === */
+.timeline {
   display: flex;
   flex-direction: column;
-  gap: calc(16 * var(--s));
+  border-left: 2px solid rgba(29, 109, 255, 0.3);
+  padding-left: 36px;
+  margin-left: 12px;
+  max-width: 780px;
 }
 
-.btn-menu {
+.tl-item {
+  position: relative;
+  padding: 24px 0 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tl-item:last-child { border-bottom: none; }
+
+.tl-dot {
+  position: absolute;
+  left: -48px;
+  top: 28px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--blue-primary);
+  border: 3px solid #000000;
+  box-shadow: 0 0 12px var(--blue-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.tl-step {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #60a5fa;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.tl-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.tl-desc { font-size: 13px; color: var(--sub); line-height: 1.7; }
+
+/* === TESTIMONIALS === */
+.test-section { background: rgba(2, 4, 12, 0.65); }
+
+.test-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.test-card {
+  background: rgba(6, 12, 28, 0.85);
+  border: 1px solid rgba(29, 109, 255, 0.2);
+  padding: 30px;
+  position: relative;
+  backdrop-filter: blur(12px);
+  transition: all 0.25s;
+}
+.test-card:hover {
+  border-color: rgba(29, 109, 255, 0.45);
+  box-shadow: 0 0 28px rgba(29, 109, 255, 0.12);
+}
+
+.test-quote {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--sub);
+  margin-bottom: 24px;
+  font-style: italic;
+}
+
+.test-author { display: flex; align-items: center; gap: 14px; }
+
+.test-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1d6dff 0%, #00dcff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  flex-shrink: 0;
+}
+
+.test-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.test-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.test-stars {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  color: #fbbf24;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+/* === FAQ === */
+.faq-list { max-width: 800px; }
+
+.faq-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.faq-item:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+
+.faq-q {
   width: 100%;
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  text-align: left;
+  padding: 20px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  transition: color 0.2s;
 }
+.faq-q:hover, .faq-item.open .faq-q { color: #60a5fa; }
 
-.menu-note {
-  font-family: 'JB', monospace;
-  font-size: calc(12 * var(--s));
-  color: var(--lab);
-  text-align: center;
+.faq-chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  transition: transform 0.3s;
 }
+.faq-item.open .faq-chevron { transform: rotate(180deg); }
 
-/* 6. Entrance Animation Initial State (html.intro) */
-html.intro .logo-wrap,
-html.intro .nav-link,
-html.intro .burger-btn,
-html.intro .sub,
-html.intro .stat-item,
-html.intro .v-rule {
-  opacity: 0;
+.faq-a {
+  font-size: 13px;
+  color: var(--sub);
+  line-height: 1.8;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s;
+  padding-bottom: 0;
 }
+.faq-item.open .faq-a { max-height: 320px; padding-bottom: 24px; }
 
-html.intro .logo-wrap {
-  transform: scale(0.9);
+/* === FOOTER CTA === */
+.footer-cta {
+  background: rgba(4, 8, 22, 0.85);
+  border-top: 1px solid var(--glass-border);
+  padding: 96px 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
+  flex-wrap: wrap;
 }
+@media(max-width:600px) { .footer-cta { padding: 64px 20px; flex-direction: column; } }
 
-html.intro .nav-link {
-  transform: translateY(calc(7 * var(--s)));
+.footer-cta-text h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  margin-bottom: 12px;
+  color: #ffffff;
 }
+.footer-cta-text p { font-size: 14px; color: var(--sub); line-height: 1.7; max-width: 500px; }
 
-html.intro .btn-top-wrap .btn,
-html.intro .hero-cta-wrap .btn {
-  clip-path: inset(0 100% 0 0);
+/* === FOOTER === */
+footer {
+  padding: 32px 72px;
+  background: rgba(0, 0, 0, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--muted);
 }
+@media(max-width:600px) { footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; } }
 
-html.intro h1 .ln span {
-  transform: translateY(120%);
-}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: #60a5fa; }
 
-html.intro .sub {
-  transform: translateY(calc(14 * var(--s)));
+/* === MOBILE MENU === */
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 2, 10, 0.98);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  padding: 90px 32px 40px;
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
 }
+.mobile-menu.open { transform: translateX(0); }
 
-html.intro .stat-num {
-  transform: translateY(calc(12 * var(--s)));
+.mobile-menu a {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: block;
 }
+.mobile-menu a:hover { color: #60a5fa; }
 
-html.intro .stat-lab {
-  transform: translateY(calc(10 * var(--s)));
-}
-
-html.intro .v-rule {
-  transform: scaleY(0);
-}
-
-/* Accessibility */
-:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-    animation: none !important;
-  }
-  html.intro * {
-    opacity: 1 !important;
-    transform: none !important;
-    clip-path: none !important;
-  }
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: #1d6dff; border-radius: 3px; }
 </style>
-
-<script>
-// Arm intro class immediately before paint
-(function() {
-  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    if (typeof Element.prototype.animate === 'function') {
-      document.documentElement.classList.add('intro');
-    }
-  }
-})();
-</script>
 </head>
 <body>
 
-<div class="probe" id="probe"></div>
+<!-- High-Performance Blue & White Cyber Animation Canvas -->
+<canvas id="cyberCanvas"></canvas>
+<div class="bg-scrim"></div>
 
-<!-- SVG Color-Grade Filters -->
-<svg class="svgdefs" aria-hidden="true">
-  <defs>
-    <filter id="grade" color-interpolation-filters="sRGB">
-      <feComponentTransfer>
-        <feFuncR type="table" tableValues="0.0018 0.0105 0.0154 0.0228 0.0307 0.0404 0.0485 0.0585 0.0719 0.0923 0.1205 0.1466 0.1657 0.1866 0.2197 0.2405 0.2485 0.2921 0.3362 0.3465 0.3472 0.3781 0.3781 0.4078 0.4199 0.4391 0.4604 0.4763 0.4798 0.5197 0.5473 0.5720 0.5995 0.6048 0.6232 0.6322 0.6483 0.6734 0.7201 0.7201 0.7410 0.7707 0.7707 0.7790 0.8084 0.8084 0.8390 0.8595 0.8707 0.8870 0.8993 0.9085 0.9132 0.9132 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9238 0.9300"/>
-        <feFuncG type="table" tableValues="0.0023 0.0106 0.0159 0.0250 0.0333 0.0445 0.0535 0.0620 0.0707 0.0827 0.0936 0.1063 0.1214 0.1402 0.1678 0.1727 0.2029 0.2176 0.2461 0.2757 0.2814 0.3050 0.3415 0.3692 0.3826 0.3884 0.4617 0.4617 0.4617 0.4643 0.4643 0.4808 0.5706 0.6005 0.6005 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6524 0.6664 0.6805 0.6945 0.7086 0.7227 0.7367 0.7508 0.7648 0.7789 0.7929 0.8070 0.8211 0.8351 0.8492 0.8632 0.8773 0.8913 0.9054 0.9195 0.9300"/>
-        <feFuncB type="table" tableValues="0.0021 0.0110 0.0187 0.0311 0.0377 0.0466 0.0584 0.0706 0.0791 0.0924 0.1039 0.1145 0.1316 0.1464 0.1614 0.1719 0.1887 0.2014 0.2247 0.2458 0.2954 0.2954 0.3089 0.3938 0.3938 0.3988 0.3988 0.4581 0.4581 0.4762 0.4762 0.4763 0.5374 0.5560 0.5813 0.5813 0.5813 0.5813 0.5835 0.5969 0.6104 0.6238 0.6373 0.6507 0.6642 0.6777 0.6911 0.7046 0.7181 0.7315 0.7449 0.7584 0.7719 0.7853 0.7988 0.8123 0.8257 0.8391 0.8526 0.8661 0.8795 0.8930 0.9065 0.9199 0.9300"/>
-      </feComponentTransfer>
-    </filter>
-    <filter id="grade2" color-interpolation-filters="sRGB">
-      <feComponentTransfer>
-        <feFuncR type="table" tableValues="0.0016 0.0092 0.0136 0.0201 0.0270 0.0356 0.0427 0.0515 0.0633 0.0812 0.1060 0.1290 0.1458 0.1642 0.1933 0.2116 0.2187 0.2570 0.2959 0.3049 0.3055 0.3327 0.3327 0.3589 0.3695 0.3864 0.4052 0.4191 0.4222 0.4573 0.4816 0.5034 0.5276 0.5322 0.5484 0.5563 0.5705 0.5926 0.6337 0.6337 0.6521 0.6782 0.6782 0.6855 0.7114 0.7114 0.7383 0.7564 0.7662 0.7806 0.7914 0.7995 0.8036 0.8036 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8129 0.8184"/>
-        <feFuncG type="table" tableValues="0.0015 0.0069 0.0103 0.0163 0.0216 0.0289 0.0348 0.0403 0.0460 0.0538 0.0608 0.0691 0.0789 0.0911 0.1091 0.1123 0.1319 0.1414 0.1600 0.1792 0.1829 0.1983 0.2220 0.2400 0.2487 0.2525 0.3001 0.3001 0.3001 0.3018 0.3018 0.3125 0.3709 0.3903 0.3903 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4241 0.4332 0.4423 0.4514 0.4606 0.4698 0.4789 0.4880 0.4971 0.5063 0.5154 0.5246 0.5337 0.5428 0.5520 0.5611 0.5702 0.5793 0.5885 0.5977 0.6045"/>
-        <feFuncB type="table" tableValues="0.0013 0.0066 0.0112 0.0187 0.0226 0.0280 0.0350 0.0424 0.0475 0.0554 0.0623 0.0687 0.0790 0.0878 0.0968 0.1031 0.1132 0.1208 0.1348 0.1475 0.1772 0.1772 0.1853 0.2363 0.2363 0.2393 0.2393 0.2749 0.2749 0.2857 0.2857 0.2858 0.3224 0.3336 0.3488 0.3488 0.3488 0.3488 0.3501 0.3581 0.3662 0.3743 0.3824 0.3904 0.3985 0.4066 0.4147 0.4228 0.4309 0.4389 0.4469 0.4550 0.4631 0.4712 0.4793 0.4874 0.4954 0.5035 0.5116 0.5197 0.5277 0.5358 0.5439 0.5519 0.5580"/>
-      </feComponentTransfer>
-    </filter>
-  </defs>
-</svg>
-
-<div class="screen">
-  <!-- 1. Background Video Layer 1 -->
-  <div class="bg">
-    <video class="bg-vid" autoplay muted loop playsinline preload="auto">
-      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" type="video/mp4">
-    </video>
-  </div>
-
-  <!-- 2. Background Video Layer 2 -->
-  <div class="bg2">
-    <video class="bg-vid" autoplay muted loop playsinline preload="auto">
-      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" type="video/mp4">
-    </video>
-  </div>
-
-  <!-- 3. Gradient Scrim -->
-  <div class="scrim"></div>
-
-  <!-- 4. Main Frame (Header, Hero, Stats) -->
-  <div class="frame">
-    <header>
-      <a href="/dashboard" class="logo-wrap" title="CyberShield Live SOC Dashboard">
-        <!-- 46x46 4-chevron inward pointing logo -->
-        <svg class="logo-svg" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g stroke="#fff" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter">
-            <!-- Arm 1 (North) -->
-            <path d="M23 0V19.5" />
-            <path d="M14 10.2L23 19.2L32 10.2" />
-            <!-- Arm 2 (East) -->
-            <path d="M46 23H26.5" />
-            <path d="M35.8 14L26.8 23L35.8 32" />
-            <!-- Arm 3 (South) -->
-            <path d="M23 46V26.5" />
-            <path d="M32 35.8L23 26.8L14 35.8" />
-            <!-- Arm 4 (West) -->
-            <path d="M0 23H19.5" />
-            <path d="M10.2 32L19.2 23L10.2 14" />
-          </g>
-        </svg>
-      </a>
-
-      <!-- Desktop Nav -->
-      <nav class="main-nav">
-        <a href="/dashboard" class="nav-link">Home</a>
-        <a href="/dashboard" class="nav-link">
-          Resources
-          <svg class="chevron-svg" viewBox="0 0 11 6"><path d="M1 1L5.5 5L10 1" /></svg>
-        </a>
-        <a href="/dashboard" class="nav-link">
-          Benefits
-          <svg class="chevron-svg" viewBox="0 0 11 6"><path d="M1 1L5.5 5L10 1" /></svg>
-        </a>
-        <a href="/dashboard" class="nav-link">Live SOC</a>
-        <a href="/dashboard" class="nav-link">Contact</a>
-      </nav>
-
-      <!-- Top CTA -->
-      <div class="btn-top-wrap">
-        <a href="/dashboard" class="btn btn-top">
-          <span>Secure system</span>
-          <svg viewBox="0 0 22 18">
-            <path d="M0 9H20.1" />
-            <path d="M12.1 1L20.1 9L12.1 17" />
-          </svg>
-        </a>
-      </div>
-
-      <!-- Mobile Burger -->
-      <button class="burger-btn" id="burgerBtn" aria-label="Open menu">
-        <span class="burger-bar"></span>
-        <span class="burger-bar"></span>
-        <span class="burger-bar"></span>
-      </button>
-    </header>
-
-    <div class="sp sp-a"></div>
-
-    <!-- Hero Section -->
-    <section class="hero">
-      <h1>
-        <span class="ln"><span>Security built into</span></span>
-        <span class="ln"><span>every system layer</span></span>
-      </h1>
-      <p class="sub">
-        Engineered to stay resilient, controlled,<br>
-        and uncompromised under pressure.
-      </p>
-      <div class="hero-cta-wrap">
-        <a href="/dashboard" class="btn btn-cta">
-          <span>Secure system</span>
-          <svg viewBox="0 0 22 18">
-            <path d="M0 9H20.1" />
-            <path d="M12.1 1L20.1 9L12.1 17" />
-          </svg>
-        </a>
-      </div>
-    </section>
-
-    <div class="sp sp-b"></div>
-
-    <!-- Stats Section -->
-    <section class="stats">
-      <div class="stat-item s1">
-        <div class="stat-num">300+</div>
-        <div class="stat-lab">Clients</div>
-      </div>
-      <div class="v-rule r1"></div>
-
-      <div class="stat-item s2">
-        <div class="stat-num">99%</div>
-        <div class="stat-lab">Satisfaction</div>
-      </div>
-      <div class="v-rule r2"></div>
-
-      <div class="stat-item s3">
-        <div class="stat-num">$5M+</div>
-        <div class="stat-lab">Revenue</div>
-      </div>
-    </section>
-
-    <div class="sp sp-c"></div>
-  </div>
-
-  <!-- Mobile Menu Overlay -->
-  <div id="menu" class="menu">
-    <div class="menu-tex">
-      <video class="bg-vid" autoplay muted loop playsinline preload="auto">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" type="video/mp4">
-      </video>
-    </div>
-    <div class="menu-rule"></div>
-    <div class="menu-eyebrow">MENU</div>
-    <ul class="menu-list">
-      <li><a href="/dashboard" class="mrow">Home</a></li>
-      <li>
-        <div class="mrow" onclick="toggleAccordion('mRes')">
-          Resources
-          <svg class="chevron-svg" viewBox="0 0 11 6"><path d="M1 1L5.5 5L10 1" /></svg>
-        </div>
-        <ul id="mRes" class="m-sublinks">
-          <li><a href="/dashboard" class="m-sublink">Documentation</a></li>
-          <li><a href="/dashboard" class="m-sublink">Threat reports</a></li>
-          <li><a href="/dashboard" class="m-sublink">Changelog</a></li>
-        </ul>
-      </li>
-      <li>
-        <div class="mrow" onclick="toggleAccordion('mBen')">
-          Benefits
-          <svg class="chevron-svg" viewBox="0 0 11 6"><path d="M1 1L5.5 5L10 1" /></svg>
-        </div>
-        <ul id="mBen" class="m-sublinks">
-          <li><a href="/dashboard" class="m-sublink">Continuous monitoring</a></li>
-          <li><a href="/dashboard" class="m-sublink">Access control</a></li>
-          <li><a href="/dashboard" class="m-sublink">Incident response</a></li>
-        </ul>
-      </li>
-      <li><a href="/dashboard" class="mrow">Contact</a></li>
-    </ul>
-    <div class="menu-footer">
-      <a href="/dashboard" class="btn btn-menu">
-        <span>Secure system</span>
-        <svg viewBox="0 0 22 18">
-          <path d="M0 9H20.1" />
-          <path d="M12.1 1L20.1 9L12.1 17" />
-        </svg>
-      </a>
-      <div class="menu-note">300+ clients &nbsp;/&nbsp; 99% satisfaction</div>
-    </div>
-  </div>
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#features">Features</a>
+  <a href="#how">How It Works</a>
+  <a href="#testimonials">Testimonials</a>
+  <a href="#faq">FAQ</a>
+  <a href="/dashboard" class="btn-primary" style="margin-top:28px; justify-content:center;">
+    Launch Live SOC
+    <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
+  </a>
 </div>
 
+<div class="site-wrap">
+  <!-- ── NAV ── -->
+  <nav class="top-nav">
+    <a href="#" class="nav-logo">
+      <svg class="shield-svg" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="40%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#1d6dff"/>
+          </linearGradient>
+        </defs>
+        <path d="M24 3L5 11V27C5 38.6 13.3 49.4 24 52C34.7 49.4 43 38.6 43 27V11L24 3Z" fill="url(#sg)" fill-opacity="0.18" stroke="url(#sg)" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M24 10L12 16V27C12 34.3 17.3 41 24 43.2C30.7 41 36 34.3 36 27V16L24 10Z" fill="url(#sg)" fill-opacity="0.1" stroke="url(#sg)" stroke-width="1.2" stroke-linejoin="round"/>
+        <path d="M17 27L22 32L31 22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-brand">CyberShield</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how">How It Works</a></li>
+      <li><a href="#testimonials">Testimonials</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li>
+        <a href="/dashboard" class="btn-nav top-cta">
+          Launch SOC
+          <svg width="16" height="12" viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
+        </a>
+      </li>
+    </ul>
+
+    <button class="burger" id="burgerBtn" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero" id="home">
+    <h1 class="hero-title">
+      <span class="hero-brand-line">
+        <svg class="hero-shield-icon" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hero-sg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="30%" stop-color="#00dcff"/>
+              <stop offset="70%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#1d6dff"/>
+            </linearGradient>
+          </defs>
+          <path d="M24 3L5 11V27C5 38.6 13.3 49.4 24 52C34.7 49.4 43 38.6 43 27V11L24 3Z" fill="url(#hero-sg)" fill-opacity="0.22" stroke="url(#hero-sg)" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M24 10L12 16V27C12 34.3 17.3 41 24 43.2C30.7 41 36 34.3 36 27V16L24 10Z" fill="url(#hero-sg)" fill-opacity="0.12" stroke="url(#hero-sg)" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M17 27L22 32L31 22" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="hero-brand-colorful">CyberShield SOC</span>
+      </span><br>
+      Multi-Platform Network<br>
+      Traffic Analyzer &amp; Active<br>
+      Threat Defense System
+    </h1>
+
+    <p class="hero-desc">
+      CyberShield SOC is an <strong>enterprise-grade, multi-platform</strong> Network Traffic Analyzer,
+      Network Intrusion Detection System (NIDS), and interactive Security Operations Center (SOC) dashboard.
+      Built with a <strong>zero-driver native packet engine</strong>, CyberShield captures, inspects, triages,
+      and mitigates live cyber threats across <strong>Windows, Linux, Android Termux, and macOS</strong>
+      with zero latency.
+    </p>
+
+    <div class="hero-cta-row">
+      <a href="/dashboard" class="btn-primary">
+        Launch Live SOC Dashboard
+        <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
+      </a>
+      <a href="#features" class="btn-secondary">
+        Explore Capabilities &rarr;
+      </a>
+    </div>
+
+    <div class="platform-badges">
+      <span class="badge active"><span>🪟</span> Windows</span>
+      <span class="badge active"><span>🐧</span> Linux</span>
+      <span class="badge active"><span>📱</span> Android Termux</span>
+      <span class="badge active"><span>🍎</span> macOS</span>
+      <span class="badge"><span>⚡</span> Zero Latency</span>
+      <span class="badge"><span>🔒</span> Zero Driver Required</span>
+    </div>
+  </section>
+
+  <!-- ── STATS STRIP ── -->
+  <div class="stats-strip" id="stats-strip">
+    <div class="stat-item">
+      <div class="stat-value">4<span>+</span></div>
+      <div class="stat-key">Platforms Supported</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">0<span>ms</span></div>
+      <div class="stat-key">Detection Latency</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">250<span>ms</span></div>
+      <div class="stat-key">WebSocket Cycle</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">11<span>/11</span></div>
+      <div class="stat-key">Test Suites Passing</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">100<span>%</span></div>
+      <div class="stat-key">Zero-Driver Engine</div>
+    </div>
+  </div>
+
+  <!-- ── CORE CAPABILITIES (INTERACTIVE SUB-MODULE ROUTING) ── -->
+  <section class="features-section" id="features">
+    <div>
+      <div class="section-label">Core Capabilities</div>
+      <h2 class="section-title">Everything you need to<br>defend your network</h2>
+      <p class="section-sub">From live packet capture to automated threat mitigation — CyberShield SOC handles the full security operations lifecycle with zero driver requirements.</p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Feature 1: Packet Capture -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">📡</div>
+          <div class="feat-title">Real-Time Packet Capture</div>
+          <div class="feat-desc">Zero-driver native socket engine captures live network packets across Windows, Linux, Termux, and macOS without Npcap or WinPcap drivers.</div>
+        </div>
+        <a href="/dashboard?tab=hud" class="feat-action">Launch Live Feed &rarr;</a>
+      </div>
+
+      <!-- Feature 2: Multi-Vector Threat Detection -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">🧠</div>
+          <div class="feat-title">Multi-Vector Threat Detection</div>
+          <div class="feat-desc">Detects Port Scans, SYN Floods, ICMP Sweeps, DNS Tunneling, and brute-force attacks via 4 parallel rule engines with instant triage.</div>
+        </div>
+        <a href="/dashboard?tab=threats" class="feat-action">View Threat Center &rarr;</a>
+      </div>
+
+      <!-- Feature 3: Active Threat Mitigation -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">🛡️</div>
+          <div class="feat-title">Active Threat Mitigation</div>
+          <div class="feat-desc">Automated and one-click IP firewall isolation. Toggle autoblock on/off from the SOC dashboard. Block rules persist across sessions in SQLite.</div>
+        </div>
+        <a href="/dashboard?tab=threats" class="feat-action">Manage Defense Rules &rarr;</a>
+      </div>
+
+      <!-- Feature 4: SOC Dashboard & Telemetry -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">📊</div>
+          <div class="feat-title">SOC Dashboard &amp; Telemetry</div>
+          <div class="feat-desc">WebSocket-driven real-time dashboard with protocol breakdown charts, throughput sparklines, top talkers, live packet stream, and socket monitor.</div>
+        </div>
+        <a href="/dashboard?tab=hud" class="feat-action">Open HUD Dashboard &rarr;</a>
+      </div>
+
+      <!-- Feature 5: Port & Subnet Scanner -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">🔍</div>
+          <div class="feat-title">Port &amp; Subnet Scanner</div>
+          <div class="feat-desc">Built-in LAN discovery engine scans your local subnet for open ports and active hosts — strictly bounded to your local network for safety.</div>
+        </div>
+        <a href="/dashboard?tab=hosts" class="feat-action">Scan Local LAN &rarr;</a>
+      </div>
+
+      <!-- Feature 6: Executive PDF Reports -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">📝</div>
+          <div class="feat-title">Executive PDF Reports</div>
+          <div class="feat-desc">Generate comprehensive security audit reports in PDF format with threat statistics, blocked IPs, protocol analysis, and forensic summaries.</div>
+        </div>
+        <a href="/api/export-pdf" target="_blank" class="feat-action">Download PDF Report &rarr;</a>
+      </div>
+
+      <!-- Feature 7: System Process Sockets -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">💻</div>
+          <div class="feat-title">Process Sockets (psutil)</div>
+          <div class="feat-desc">Inspect active TCP/UDP socket connections mapped directly to native OS process names and PIDs with zero subprocess overhead.</div>
+        </div>
+        <a href="/dashboard?tab=sockets" class="feat-action">Inspect Process Sockets &rarr;</a>
+      </div>
+
+      <!-- Feature 8: Top Bandwidth Talkers -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">📈</div>
+          <div class="feat-title">Top Bandwidth Talkers</div>
+          <div class="feat-desc">Live ranking of communicating endpoints by packet volume and bandwidth consumption with one-click port scanning and defense controls.</div>
+        </div>
+        <a href="/dashboard?tab=talkers" class="feat-action">View Top Talkers &rarr;</a>
+      </div>
+
+      <!-- Feature 9: GZip High-Speed API -->
+      <div class="feature-card">
+        <div>
+          <div class="feat-icon">⚡</div>
+          <div class="feat-title">GZip-Compressed Backend</div>
+          <div class="feat-desc">FastAPI backend with GZipMiddleware compression (70–80% bandwidth reduction), delivering sub-100ms dashboard updates over any network.</div>
+        </div>
+        <a href="/dashboard" class="feat-action">Explore Platform &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ── -->
+  <section id="how">
+    <div>
+      <div class="section-label">Architecture</div>
+      <h2 class="section-title">How CyberShield works</h2>
+      <p class="section-sub">A five-stage pipeline from raw bytes to blocked threats — running live in your network.</p>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot">1</div>
+        <div class="tl-step">Stage 1 · Capture</div>
+        <div class="tl-title">Zero-Driver Packet Capture</div>
+        <div class="tl-desc">The native socket sniffer binds directly to your NIC using raw socket telemetry — zero kernel drivers, zero external dependencies.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">2</div>
+        <div class="tl-step">Stage 2 · Parse</div>
+        <div class="tl-title">Deep Packet Inspection &amp; Protocol Parsing</div>
+        <div class="tl-desc">Each packet is parsed into a typed PacketSummary model: IPs, ports, TCP flags, TTL, DNS queries, HTTP paths, and hex previews in microseconds.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">3</div>
+        <div class="tl-step">Stage 3 · Analyze</div>
+        <div class="tl-title">4-Engine Threat Detection Pipeline</div>
+        <div class="tl-desc">The DetectionEngine executes Port Scan, SYN Flood, ICMP Sweep, and DNS Tunnel detectors in parallel with instant alert propagation.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">4</div>
+        <div class="tl-step">Stage 4 · Broadcast</div>
+        <div class="tl-title">250ms WebSocket Broadcast Cycle</div>
+        <div class="tl-desc">An asyncio broadcast task delivers telemetry payloads to connected SOC clients every 250ms with zero event-loop blocking.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">5</div>
+        <div class="tl-step">Stage 5 · Mitigate</div>
+        <div class="tl-title">Automated &amp; Manual IP Firewall Block</div>
+        <div class="tl-desc">Flagged malicious IPs are blocked via system firewall rules or manually from the dashboard with one click.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ── -->
+  <section class="test-section" id="testimonials">
+    <div>
+      <div class="section-label">Testimonials</div>
+      <h2 class="section-title">Trusted by security professionals</h2>
+      <p class="section-sub">Here's what professionals and researchers say about CyberShield SOC.</p>
+    </div>
+
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="test-quote">CyberShield gave me a full SOC dashboard on my laptop in under 5 minutes. The zero-driver engine is a game-changer — I can run it on any machine without driver installs.</p>
+        <div class="test-author">
+          <div class="test-avatar">AK</div>
+          <div>
+            <div class="test-name">Arjun Kumar</div>
+            <div class="test-role">Senior Network Security Engineer, TCS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-card">
+        <div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="test-quote">The multi-platform support is incredible. I deployed CyberShield on an Android Termux session during a pentest engagement and had live packet feeds running immediately.</p>
+        <div class="test-author">
+          <div class="test-avatar">PM</div>
+          <div>
+            <div class="test-name">Priya Menon</div>
+            <div class="test-role">Penetration Tester, CyberCrew Labs</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-card">
+        <div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="test-quote">The DNS tunneling and SYN flood detectors caught actual threats in our lab environment that commercial tools missed. The alert quality is surprisingly solid.</p>
+        <div class="test-author">
+          <div class="test-avatar">SR</div>
+          <div>
+            <div class="test-name">Siddharth Rao</div>
+            <div class="test-role">SOC Analyst, Infosys Cybersecurity</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-card">
+        <div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+        <p class="test-quote">Used CyberShield for a university research project on NIDS systems. The codebase is clean, the API is well-structured, and the WebSocket dashboard is genuinely impressive.</p>
+        <div class="test-author">
+          <div class="test-avatar">DV</div>
+          <div>
+            <div class="test-name">Divya Varma</div>
+            <div class="test-role">CS Researcher, IIT Hyderabad</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-card">
+        <div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="test-quote">Deployed on a Raspberry Pi running Linux to monitor our home lab network. The TUI interface works over SSH, and the PDF report export is excellent.</p>
+        <div class="test-author">
+          <div class="test-avatar">RN</div>
+          <div>
+            <div class="test-name">Rahul Nair</div>
+            <div class="test-role">DevSecOps Lead, Startups.in</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-card">
+        <div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="test-quote">The autoblock feature is brilliant. During a simulated port scan attack in our lab, CyberShield detected and blocked the attacker IP within milliseconds.</p>
+        <div class="test-author">
+          <div class="test-avatar">KP</div>
+          <div>
+            <div class="test-name">Kavya Pillai</div>
+            <div class="test-role">Security Architect, Wipro Digital</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ── -->
+  <section id="faq">
+    <div>
+      <div class="section-label">FAQ</div>
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <p class="section-sub">Everything you need to know about CyberShield SOC.</p>
+    </div>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Does CyberShield require administrator or root privileges?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">CyberShield's zero-driver native socket engine works without admin rights on Linux and macOS for basic telemetry. On Windows, raw socket features run with standard elevation. The web dashboard and REST API always run without elevation.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What platforms does CyberShield support?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">CyberShield SOC is fully operational on Windows 10/11, Ubuntu/Debian Linux, Android Termux (ARM64), and macOS 12+. The web dashboard works on any modern browser, and the TUI terminal interface works over SSH.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How does threat detection work?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">CyberShield uses a multi-engine rule-based detection pipeline with statistical anomaly triggers for Port Scans, SYN Floods, ICMP Sweeps, and DNS Tunneling with sub-millisecond response times.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Can I scan external internet IPs?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">No. CyberShield's active port scanner and host discovery tools are strictly bounded to your local subnet by design. Passive packet capture inspects all incoming/outgoing traffic on your NIC.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How is data stored? Does CyberShield send data anywhere?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">All telemetry, alerts, and blocked IPs are stored locally in a SQLite database. CyberShield makes zero external connections and is completely air-gap compatible.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How do I start CyberShield SOC?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">Run <code style="color:#60a5fa">python run_web.py</code> to launch the web dashboard at <code style="color:#60a5fa">http://localhost:8000</code>. For the interactive terminal interface, run <code style="color:#60a5fa">python launcher.py</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER CTA ── -->
+  <div class="footer-cta">
+    <div class="footer-cta-text">
+      <h2>Ready to defend your network?</h2>
+      <p>Launch the live SOC dashboard and start monitoring network traffic, detecting threats, and blocking attackers in real time — zero configuration required.</p>
+    </div>
+    <a href="/dashboard" class="btn-primary" style="padding:16px 40px; font-size:16px; flex-shrink:0;">
+      Launch Live SOC Dashboard
+      <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
+    </a>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <svg width="22" height="26" viewBox="0 0 48 56" fill="none">
+        <path d="M24 3L5 11V27C5 38.6 13.3 49.4 24 52C34.7 49.4 43 38.6 43 27V11L24 3Z" fill="rgba(29,109,255,0.3)" stroke="#1d6dff" stroke-width="1.5"/>
+        <path d="M17 27L22 32L31 22" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>CyberShield SOC &copy; 2026 &nbsp;·&nbsp; Multi-Platform Network Threat Defense</span>
+    </div>
+    <div style="display:flex; gap:24px;">
+      <a href="https://github.com/Sathvikpolipati/CyberShield" target="_blank" rel="noopener">GitHub</a>
+      <a href="/dashboard">Live SOC</a>
+      <a href="#faq">FAQ</a>
+      <a href="#features">Features</a>
+    </div>
+  </footer>
+</div>
+
+<!-- High-Performance Blue & White Cyber Canvas Animation Script (60FPS Stable) -->
 <script>
-// Video Sync Engine
 (function() {
-  const vids = Array.from(document.querySelectorAll('video.bg-vid'));
-  if (vids.length > 1) {
-    const master = vids[0];
-    master.addEventListener('timeupdate', () => {
-      for (let i = 1; i < vids.length; i++) {
-        if (Math.abs(vids[i].currentTime - master.currentTime) > 0.12) {
-          vids[i].currentTime = master.currentTime;
+  const canvas = document.getElementById('cyberCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  // Circuit Grid Traces & Digital Pulses in Electric Blue and Glowing White
+  const traces = [];
+  const traceCount = 45;
+  const dataPackets = [];
+  const packetCount = 28;
+
+  for (let i = 0; i < traceCount; i++) {
+    const isRight = Math.random() > 0.3;
+    const startX = isRight ? (width * 0.45 + Math.random() * (width * 0.55)) : (Math.random() * width * 0.45);
+    const startY = Math.random() * height;
+    const isHoriz = Math.random() > 0.5;
+    const length = 120 + Math.random() * 260;
+    
+    traces.push({
+      x1: startX,
+      y1: startY,
+      x2: isHoriz ? startX + length : startX,
+      y2: isHoriz ? startY : startY + length,
+      color: Math.random() > 0.25 ? 'rgba(29, 109, 255, ' + (0.12 + Math.random() * 0.22) + ')' : 'rgba(255, 255, 255, ' + (0.15 + Math.random() * 0.25) + ')',
+      width: Math.random() > 0.8 ? 1.5 : 0.8,
+      speed: 0.2 + Math.random() * 0.6,
+      progress: Math.random()
+    });
+  }
+
+  for (let i = 0; i < packetCount; i++) {
+    const trace = traces[Math.floor(Math.random() * traces.length)];
+    dataPackets.push({
+      trace: trace,
+      t: Math.random(),
+      speed: 0.003 + Math.random() * 0.007,
+      size: 1.5 + Math.random() * 2.5,
+      isWhite: Math.random() > 0.4
+    });
+  }
+
+  // Neural Synapse Nodes
+  const nodes = [];
+  for (let i = 0; i < 35; i++) {
+    nodes.push({
+      x: width * 0.4 + Math.random() * (width * 0.6),
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      radius: 1.5 + Math.random() * 2,
+      isWhite: Math.random() > 0.5
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. Draw Circuit Grid Lines
+    traces.forEach(tr => {
+      ctx.beginPath();
+      ctx.moveTo(tr.x1, tr.y1);
+      ctx.lineTo(tr.x2, tr.y2);
+      ctx.strokeStyle = tr.color;
+      ctx.lineWidth = tr.width;
+      ctx.stroke();
+
+      // Small circuit endpoint node
+      ctx.beginPath();
+      ctx.arc(tr.x2, tr.y2, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(29, 109, 255, 0.4)';
+      ctx.fill();
+    });
+
+    // 2. Draw Traveling Blue & White Data Sparks
+    dataPackets.forEach(p => {
+      p.t += p.speed;
+      if (p.t > 1) {
+        p.t = 0;
+        p.trace = traces[Math.floor(Math.random() * traces.length)];
+      }
+      const curX = p.trace.x1 + (p.trace.x2 - p.trace.x1) * p.t;
+      const curY = p.trace.y1 + (p.trace.y2 - p.trace.y1) * p.t;
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, p.size, 0, Math.PI * 2);
+      if (p.isWhite) {
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#ffffff';
+      } else {
+        ctx.fillStyle = '#00dcff';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#1d6dff';
+      }
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    // 3. Draw Synaptic Grid on the Right Atmosphere
+    for (let i = 0; i < nodes.length; i++) {
+      const n1 = nodes[i];
+      n1.x += n1.vx;
+      n1.y += n1.vy;
+      if (n1.x < width * 0.35 || n1.x > width) n1.vx *= -1;
+      if (n1.y < 0 || n1.y > height) n1.vy *= -1;
+
+      for (let j = i + 1; j < nodes.length; j++) {
+        const n2 = nodes[j];
+        const dx = n1.x - n2.x;
+        const dy = n1.y - n2.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 140) {
+          ctx.beginPath();
+          ctx.moveTo(n1.x, n1.y);
+          ctx.lineTo(n2.x, n2.y);
+          ctx.strokeStyle = `rgba(29, 109, 255, ${0.18 * (1 - dist / 140)})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
         }
       }
-    });
+
+      ctx.beginPath();
+      ctx.arc(n1.x, n1.y, n1.radius, 0, Math.PI * 2);
+      ctx.fillStyle = n1.isWhite ? 'rgba(255, 255, 255, 0.75)' : 'rgba(96, 165, 250, 0.75)';
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
   }
+
+  draw();
 })();
 
-// Accordion & Burger Logic
-const burgerBtn = document.getElementById('burgerBtn');
-burgerBtn.addEventListener('click', () => {
-  const isOpen = document.body.classList.toggle('nav-open');
-  burgerBtn.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
-});
-
-function toggleAccordion(id) {
-  const el = document.getElementById(id);
-  const others = document.querySelectorAll('.m-sublinks');
-  others.forEach(o => {
-    if (o !== el) o.classList.remove('open');
-  });
-  if (el) el.classList.toggle('open');
+// Mobile Burger
+const burger = document.getElementById('burgerBtn');
+const mobileMenu = document.getElementById('mobileMenu');
+if (burger && mobileMenu) {
+  burger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+  mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.remove('open')));
 }
 
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    document.body.classList.remove('nav-open');
-    burgerBtn.setAttribute('aria-label', 'Open menu');
-  }
-});
-
-window.addEventListener('resize', () => {
-  if (window.innerWidth > 1023) {
-    document.body.classList.remove('nav-open');
-  }
-});
-
-// WAAPI One-Shot Master Entrance Animation Choreography
-(function() {
-  if (!document.documentElement.classList.contains('intro')) return;
-
-  const EXPO = 'cubic-bezier(.16,1,.3,1)';
-  const QUINT = 'cubic-bezier(.22,1,.36,1)';
-  const QUART = 'cubic-bezier(.25,1,.5,1)';
-  const TYPE = 'cubic-bezier(.22,.85,.24,1)';
-
-  const isPhone = window.innerWidth <= 599;
-  const timeScale = isPhone ? 0.86 : 1.0;
-
-  function runEntrance() {
-    const probe = document.getElementById('probe');
-    const scale = probe ? probe.offsetWidth / 100 : 1.0;
-
-    const logo = document.querySelector('.logo-wrap');
-    const navLinks = Array.from(document.querySelectorAll('.nav-link'));
-    const burger = document.querySelector('.burger-btn');
-    const btnTop = document.querySelector('.btn-top-wrap .btn');
-    const h1Spans = Array.from(document.querySelectorAll('h1 .ln span'));
-    const sub = document.querySelector('.sub');
-    const btnCta = document.querySelector('.hero-cta-wrap .btn');
-    const rules = Array.from(document.querySelectorAll('.v-rule'));
-    const statNums = Array.from(document.querySelectorAll('.stat-num'));
-    const statLabs = Array.from(document.querySelectorAll('.stat-lab'));
-
-    const anims = [];
-
-    // 0.00s Logo: opacity 0->1, scale 0.9->1, dur 0.70s, EXPO
-    if (logo) {
-      anims.push(logo.animate([
-        { opacity: 0, transform: 'scale(0.9)' },
-        { opacity: 1, transform: 'scale(1)' }
-      ], {
-        duration: 700 * timeScale,
-        easing: EXPO,
-        fill: 'forwards'
-      }));
-    }
-
-    // 0.12s Nav links rise 7px, dur 0.62s, stagger 0.055s, QUINT
-    navLinks.forEach((link, idx) => {
-      anims.push(link.animate([
-        { opacity: 0, transform: `translateY(${7 * scale}px)` },
-        { opacity: 1, transform: 'translateY(0)' }
-      ], {
-        delay: (120 + idx * 55) * timeScale,
-        duration: 620 * timeScale,
-        easing: QUINT,
-        fill: 'forwards'
-      }));
-    });
-
-    // 0.18s Burger fade, dur 0.55s, QUART
-    if (burger) {
-      anims.push(burger.animate([
-        { opacity: 0 },
-        { opacity: 1 }
-      ], {
-        delay: 180 * timeScale,
-        duration: 550 * timeScale,
-        easing: QUART,
-        fill: 'forwards'
-      }));
-    }
-
-    // 0.28s Top button wipe clip, dur 0.66s, EXPO
-    if (btnTop) {
-      anims.push(btnTop.animate([
-        { clipPath: 'inset(0 100% 0 0)' },
-        { clipPath: 'inset(0 0% 0 0)' }
-      ], {
-        delay: 280 * timeScale,
-        duration: 660 * timeScale,
-        easing: EXPO,
-        fill: 'forwards'
-      }));
-    }
-
-    // 0.34s Headline lines rise from 120%, dur 0.98s, stagger 0.09s, TYPE
-    h1Spans.forEach((span, idx) => {
-      anims.push(span.animate([
-        { transform: 'translateY(120%)' },
-        { transform: 'translateY(0%)' }
-      ], {
-        delay: (340 + idx * 90) * timeScale,
-        duration: 980 * timeScale,
-        easing: TYPE,
-        fill: 'forwards'
-      }));
-    });
-
-    // 0.74s Sub rise 14px, dur 0.72s, QUINT
-    if (sub) {
-      anims.push(sub.animate([
-        { opacity: 0, transform: `translateY(${14 * scale}px)` },
-        { opacity: 1, transform: 'translateY(0)' }
-      ], {
-        delay: 740 * timeScale,
-        duration: 720 * timeScale,
-        easing: QUINT,
-        fill: 'forwards'
-      }));
-    }
-
-    // 0.90s Hero CTA wipe, dur 0.70s, EXPO
-    if (btnCta) {
-      anims.push(btnCta.animate([
-        { clipPath: 'inset(0 100% 0 0)' },
-        { clipPath: 'inset(0 0% 0 0)' }
-      ], {
-        delay: 900 * timeScale,
-        duration: 700 * timeScale,
-        easing: EXPO,
-        fill: 'forwards'
-      }));
-    }
-
-    // 0.98s Rules scaleY 0->1, dur 0.60s, stagger 0.07s, QUART
-    rules.forEach((r, idx) => {
-      anims.push(r.animate([
-        { opacity: 0, transform: 'scaleY(0)' },
-        { opacity: 1, transform: 'scaleY(1)' }
-      ], {
-        delay: (980 + idx * 70) * timeScale,
-        duration: 600 * timeScale,
-        easing: QUART,
-        fill: 'forwards'
-      }));
-    });
-
-    // 1.04s Stat nums rise 12px, dur 0.66s, stagger 0.085s, QUINT
-    statNums.forEach((num, idx) => {
-      anims.push(num.animate([
-        { opacity: 0, transform: `translateY(${12 * scale}px)` },
-        { opacity: 1, transform: 'translateY(0)' }
-      ], {
-        delay: (1040 + idx * 85) * timeScale,
-        duration: 660 * timeScale,
-        easing: QUINT,
-        fill: 'forwards'
-      }));
-    });
-
-    // 1.10s Stat labs rise 10px, dur 0.62s, stagger 0.085s, QUINT
-    statLabs.forEach((lab, idx) => {
-      anims.push(lab.animate([
-        { opacity: 0, transform: `translateY(${10 * scale}px)` },
-        { opacity: 1, transform: 'translateY(0)' }
-      ], {
-        delay: (1100 + idx * 85) * timeScale,
-        duration: 620 * timeScale,
-        easing: QUINT,
-        fill: 'forwards'
-      }));
-    });
-
-    // Cleanup when done
-    setTimeout(() => {
-      document.documentElement.classList.remove('intro');
-      anims.forEach(a => {
-        try { a.cancel(); } catch (e) {}
-      });
-    }, 2800 * timeScale);
-  }
-
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => requestAnimationFrame(runEntrance));
-  } else {
-    window.addEventListener('DOMContentLoaded', () => requestAnimationFrame(runEntrance));
-  }
-
-  setTimeout(() => {
-    document.documentElement.classList.remove('intro');
-  }, 4000);
-})();
+// FAQ Accordion
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
 </script>
-
 </body>
 </html>
