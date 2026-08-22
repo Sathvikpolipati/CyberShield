@@ -1,5 +1,5 @@
-import datetime
 import asyncio
+import datetime
 import logging
 import os
 import queue
@@ -40,19 +40,20 @@ os.makedirs(static_dir, exist_ok=True)
 templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Telemetry Ring Buffers & Counters
+# Thread-Safe Telemetry Storage
 recent_packets: deque = deque(maxlen=Config.PACKET_HISTORY_LIMIT)
+pending_new_packets: deque = deque(maxlen=200)
 recent_alerts: deque = deque(maxlen=Config.ALERT_HISTORY_LIMIT)
 throughput_history: deque = deque([0.0]*60, maxlen=Config.THROUGHPUT_HISTORY_SECS)
 current_sockets: List[Dict[str, Any]] = []
 top_talkers_pkts: Counter = Counter()
 top_talkers_bytes: Counter = Counter()
 _pname_cache: Dict[int, str] = {}
+_telemetry_lock = threading.Lock()
 
 detection_engine: Optional[Any] = None
 live_sniffer: Optional[Any] = None
 active_websockets: List[WebSocket] = []
-main_event_loop: Optional[asyncio.AbstractEventLoop] = None
 
 stats = {
     "total_packets": 0,
@@ -81,25 +82,26 @@ class BlockReq(BaseModel):
     reason: Optional[str] = "Admin web action"
 
 class AttackSimReq(BaseModel):
-    attack_type: str  # 'port_scan', 'syn_flood', 'icmp_sweep', 'dns_tunnel'
+    attack_type: str
 
 def get_top_talkers_list(limit: int = 15) -> List[Dict[str, Any]]:
     talkers = []
-    total_bytes = max(stats["total_bytes"], 1)
-    for ip, pkts in top_talkers_pkts.most_common(limit):
-        b = top_talkers_bytes.get(ip, 0)
-        pct = round((b / total_bytes) * 100, 1)
-        talkers.append({
-            "ip": ip,
-            "packets": pkts,
-            "bytes": b,
-            "formatted_bytes": f"{b / 1024:.1f} KB" if b < 1024*1024 else f"{b / (1024*1024):.2f} MB",
-            "percent": pct,
-            "is_blocked": FirewallManager.is_ip_blocked(ip)
-        })
+    with _telemetry_lock:
+        total_bytes = max(stats["total_bytes"], 1)
+        for ip, pkts in top_talkers_pkts.most_common(limit):
+            b = top_talkers_bytes.get(ip, 0)
+            pct = round((b / total_bytes) * 100, 1)
+            talkers.append({
+                "ip": ip,
+                "packets": pkts,
+                "bytes": b,
+                "formatted_bytes": f"{b / 1024:.1f} KB" if b < 1024*1024 else f"{b / (1024*1024):.2f} MB",
+                "percent": pct,
+                "is_blocked": FirewallManager.is_ip_blocked(ip)
+            })
     return talkers
 
-# Pure Python In-Memory Socket Poller
+# Pure Python In-Memory Socket Poller (psutil)
 async def socket_poller_task():
     global current_sockets, _pname_cache
     while True:
@@ -135,63 +137,62 @@ async def socket_poller_task():
             logger.debug("psutil socket poller exception: %s", e)
         await asyncio.sleep(Config.SOCKET_POLL_INTERVAL)
 
-# WebSocket & Metrics Broadcast (500ms interval)
+# Ultra-Smooth 250ms Event-Loop Broadcast Task (Zero Concurrency Conflicts)
 async def ws_broadcast_task():
     global _last_pkt_count, _last_byte_count, _last_tick_time
     while True:
-        await asyncio.sleep(Config.WS_BROADCAST_INTERVAL)
+        await asyncio.sleep(0.25)
+        if not active_websockets:
+            continue
+
         now = time.time()
         dt = max(now - _last_tick_time, 0.2)
         
-        # Calculate instant live rate
-        instant_pkts = (stats["total_packets"] - _last_pkt_count) / dt
-        instant_bytes = (stats["total_bytes"] - _last_byte_count) / dt
-        
-        _last_pkt_count = stats["total_packets"]
-        _last_byte_count = stats["total_bytes"]
-        _last_tick_time = now
-        
-        stats["packets_per_sec"] = round(instant_pkts, 1)
-        stats["bytes_per_sec"] = round(instant_bytes, 1)
-        throughput_history.append(stats["packets_per_sec"])
-        stats["autoblock_enabled"] = FirewallManager.autoblock_enabled
+        with _telemetry_lock:
+            instant_pkts = (stats["total_packets"] - _last_pkt_count) / dt
+            instant_bytes = (stats["total_bytes"] - _last_byte_count) / dt
+            
+            _last_pkt_count = stats["total_packets"]
+            _last_byte_count = stats["total_bytes"]
+            _last_tick_time = now
+            
+            stats["packets_per_sec"] = round(instant_pkts, 1)
+            stats["bytes_per_sec"] = round(instant_bytes, 1)
+            throughput_history.append(stats["packets_per_sec"])
+            stats["autoblock_enabled"] = FirewallManager.autoblock_enabled
 
-        payload = {
-            "type": "tick",
-            "stats": stats,
-            "threat_level": "CRITICAL" if stats["active_threats"] > 3 else ("ELEVATED" if stats["active_threats"] > 0 else "NOMINAL"),
-            "throughput": list(throughput_history),
-            "protocols": stats["protocols"],
-            "sockets": current_sockets[:25],
-            "talkers": get_top_talkers_list(10),
-            "blocked_ips": list(FirewallManager.blocked_ips)
-        }
-        await broadcast(payload)
+            # Drain batch of new packets for this tick
+            new_pkts_list = []
+            while pending_new_packets:
+                new_pkts_list.append(pending_new_packets.popleft())
 
-def broadcast_sync(payload: Dict[str, Any]):
-    global main_event_loop
-    if not active_websockets or not main_event_loop or not main_event_loop.is_running():
-        return
-    try:
-        asyncio.run_coroutine_threadsafe(broadcast(payload), main_event_loop)
-    except Exception:
-        pass
+            payload = {
+                "type": "tick",
+                "stats": dict(stats),
+                "threat_level": "CRITICAL" if stats["active_threats"] > 3 else ("ELEVATED" if stats["active_threats"] > 0 else "NOMINAL"),
+                "throughput": list(throughput_history),
+                "protocols": dict(stats["protocols"]),
+                "new_packets": new_pkts_list,
+                "sockets": current_sockets[:25],
+                "talkers": get_top_talkers_list(10),
+                "blocked_ips": list(FirewallManager.blocked_ips)
+            }
 
-async def broadcast(payload: Dict[str, Any]):
-    disconnected = []
-    for ws in list(active_websockets):
-        try:
-            await ws.send_json(payload)
-        except Exception:
-            disconnected.append(ws)
-    for ws in disconnected:
-        if ws in active_websockets:
-            active_websockets.remove(ws)
+        # Safe Single-Coro WebSocket Dispatch
+        disconnected = []
+        for ws in list(active_websockets):
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                disconnected.append(ws)
+        for ws in disconnected:
+            if ws in active_websockets:
+                active_websockets.remove(ws)
 
-# Auto-start internal sniffer worker
+# Auto-start sniffer worker
 def ensure_sniffer_running():
     global live_sniffer, detection_engine
-    if live_sniffer is not None:
+    if live_sniffer is not None and live_sniffer.running:
         return
     
     Database.init_db()
@@ -215,26 +216,26 @@ def ensure_sniffer_running():
 
                 alerts = detection_engine.analyze_packet(pkt)
                 pkt_dict = pkt.model_dump()
-                recent_packets.append(pkt_dict)
-                stats["total_packets"] += 1
-                stats["total_bytes"] += pkt.length
-                p_name = pkt.protocol.value
-                stats["protocols"][p_name] = stats["protocols"].get(p_name, 0) + 1
 
-                if pkt.src_ip:
-                    top_talkers_pkts[pkt.src_ip] += 1
-                    top_talkers_bytes[pkt.src_ip] += pkt.length
-                if pkt.dst_ip:
-                    top_talkers_pkts[pkt.dst_ip] += 1
-                    top_talkers_bytes[pkt.dst_ip] += pkt.length
+                with _telemetry_lock:
+                    recent_packets.append(pkt_dict)
+                    pending_new_packets.append(pkt_dict)
+                    stats["total_packets"] += 1
+                    stats["total_bytes"] += pkt.length
+                    p_name = pkt.protocol.value
+                    stats["protocols"][p_name] = stats["protocols"].get(p_name, 0) + 1
 
-                broadcast_sync({"type": "packet", "packet": pkt_dict})
+                    if pkt.src_ip:
+                        top_talkers_pkts[pkt.src_ip] += 1
+                        top_talkers_bytes[pkt.src_ip] += pkt.length
+                    if pkt.dst_ip:
+                        top_talkers_pkts[pkt.dst_ip] += 1
+                        top_talkers_bytes[pkt.dst_ip] += pkt.length
 
-                for alert in alerts:
-                    recent_alerts.append(alert)
-                    stats["alert_count"] += 1
-                    stats["active_threats"] += 1
-                    broadcast_sync({"type": "alert", "alert": alert})
+                    for alert in alerts:
+                        recent_alerts.append(alert)
+                        stats["alert_count"] += 1
+                        stats["active_threats"] += 1
 
                 packet_queue.task_done()
             except Exception as e:
@@ -245,8 +246,6 @@ def ensure_sniffer_running():
 
 @app.on_event("startup")
 async def startup_event():
-    global main_event_loop
-    main_event_loop = asyncio.get_running_loop()
     ensure_sniffer_running()
     asyncio.create_task(socket_poller_task())
     asyncio.create_task(ws_broadcast_task())
@@ -276,29 +275,32 @@ async def get_status():
 
 @app.get("/api/stats")
 async def get_stats():
-    threat_level = "CRITICAL" if stats["active_threats"] > 3 else ("ELEVATED" if stats["active_threats"] > 0 else "NOMINAL")
-    return {
-        "total_packets": stats["total_packets"],
-        "total_bytes": stats["total_bytes"],
-        "packets_per_sec": stats["packets_per_sec"],
-        "bytes_per_sec": stats["bytes_per_sec"],
-        "threat_count": stats["alert_count"],
-        "active_threats": stats["active_threats"],
-        "threat_level": threat_level,
-        "protocols": stats["protocols"],
-        "throughput": list(throughput_history),
-        "talkers": get_top_talkers_list(15),
-        "autoblock_enabled": FirewallManager.autoblock_enabled,
-        "blocked_ips": list(FirewallManager.blocked_ips)
-    }
+    with _telemetry_lock:
+        threat_level = "CRITICAL" if stats["active_threats"] > 3 else ("ELEVATED" if stats["active_threats"] > 0 else "NOMINAL")
+        return {
+            "total_packets": stats["total_packets"],
+            "total_bytes": stats["total_bytes"],
+            "packets_per_sec": stats["packets_per_sec"],
+            "bytes_per_sec": stats["bytes_per_sec"],
+            "threat_count": stats["alert_count"],
+            "active_threats": stats["active_threats"],
+            "threat_level": threat_level,
+            "protocols": dict(stats["protocols"]),
+            "throughput": list(throughput_history),
+            "talkers": get_top_talkers_list(15),
+            "autoblock_enabled": FirewallManager.autoblock_enabled,
+            "blocked_ips": list(FirewallManager.blocked_ips)
+        }
 
 @app.get("/api/alerts")
 async def get_alerts():
-    return list(recent_alerts)[-30:]
+    with _telemetry_lock:
+        return list(recent_alerts)[-30:]
 
 @app.get("/api/threats")
 async def get_threats():
-    return list(recent_alerts)[-30:]
+    with _telemetry_lock:
+        return list(recent_alerts)[-30:]
 
 @app.get("/api/talkers")
 async def get_talkers():
@@ -306,7 +308,8 @@ async def get_talkers():
 
 @app.get("/api/packets")
 async def get_packets():
-    return list(recent_packets)[-50:]
+    with _telemetry_lock:
+        return list(recent_packets)[-50:]
 
 @app.get("/api/hosts")
 async def get_hosts():
@@ -319,13 +322,11 @@ async def get_sockets():
 @app.post("/api/firewall/block")
 async def block_ip_api(req: BlockReq):
     res = FirewallManager.block_ip(req.ip, reason=req.reason)
-    await broadcast({"type": "firewall_update", "blocked_ips": list(FirewallManager.blocked_ips)})
     return res
 
 @app.post("/api/firewall/unblock")
 async def unblock_ip_api(req: BlockReq):
     res = FirewallManager.unblock_ip(req.ip)
-    await broadcast({"type": "firewall_update", "blocked_ips": list(FirewallManager.blocked_ips)})
     return res
 
 @app.post("/api/firewall/toggle-autoblock")
@@ -365,13 +366,14 @@ async def simulate_attack(req: AttackSimReq):
                 raw_hex_preview="4500003c" + format(port, "04x")
             )
             alerts = detection_engine.analyze_packet(pkt)
-            recent_packets.append(pkt.model_dump())
-            stats["total_packets"] += 1
-            for a in alerts:
-                recent_alerts.append(a)
-                stats["alert_count"] += 1
-                stats["active_threats"] += 1
-                broadcast_sync({"type": "alert", "alert": a})
+            with _telemetry_lock:
+                recent_packets.append(pkt.model_dump())
+                pending_new_packets.append(pkt.model_dump())
+                stats["total_packets"] += 1
+                for a in alerts:
+                    recent_alerts.append(a)
+                    stats["alert_count"] += 1
+                    stats["active_threats"] += 1
 
     elif att_type in ["syn_flood", "dos"]:
         for _ in range(35):
@@ -391,13 +393,14 @@ async def simulate_attack(req: AttackSimReq):
                 raw_hex_preview="4500003c0050"
             )
             alerts = detection_engine.analyze_packet(pkt)
-            recent_packets.append(pkt.model_dump())
-            stats["total_packets"] += 1
-            for a in alerts:
-                recent_alerts.append(a)
-                stats["alert_count"] += 1
-                stats["active_threats"] += 1
-                broadcast_sync({"type": "alert", "alert": a})
+            with _telemetry_lock:
+                recent_packets.append(pkt.model_dump())
+                pending_new_packets.append(pkt.model_dump())
+                stats["total_packets"] += 1
+                for a in alerts:
+                    recent_alerts.append(a)
+                    stats["alert_count"] += 1
+                    stats["active_threats"] += 1
 
     elif att_type in ["icmp_sweep", "ping"]:
         for i in range(1, 20):
@@ -415,13 +418,14 @@ async def simulate_attack(req: AttackSimReq):
                 raw_hex_preview="0800f7ff"
             )
             alerts = detection_engine.analyze_packet(pkt)
-            recent_packets.append(pkt.model_dump())
-            stats["total_packets"] += 1
-            for a in alerts:
-                recent_alerts.append(a)
-                stats["alert_count"] += 1
-                stats["active_threats"] += 1
-                broadcast_sync({"type": "alert", "alert": a})
+            with _telemetry_lock:
+                recent_packets.append(pkt.model_dump())
+                pending_new_packets.append(pkt.model_dump())
+                stats["total_packets"] += 1
+                for a in alerts:
+                    recent_alerts.append(a)
+                    stats["alert_count"] += 1
+                    stats["active_threats"] += 1
 
     elif att_type in ["dns_tunnel", "dns"]:
         for _ in range(5):
@@ -442,13 +446,14 @@ async def simulate_attack(req: AttackSimReq):
                 raw_hex_preview="00010100"
             )
             alerts = detection_engine.analyze_packet(pkt)
-            recent_packets.append(pkt.model_dump())
-            stats["total_packets"] += 1
-            for a in alerts:
-                recent_alerts.append(a)
-                stats["alert_count"] += 1
-                stats["active_threats"] += 1
-                broadcast_sync({"type": "alert", "alert": a})
+            with _telemetry_lock:
+                recent_packets.append(pkt.model_dump())
+                pending_new_packets.append(pkt.model_dump())
+                stats["total_packets"] += 1
+                for a in alerts:
+                    recent_alerts.append(a)
+                    stats["alert_count"] += 1
+                    stats["active_threats"] += 1
 
     return {"status": "success", "attack": att_type, "attacker_ip": attacker_ip, "active_threats": stats["active_threats"]}
 
@@ -464,7 +469,6 @@ async def trigger_subnet_scan(req: SubnetScanReq):
         )
 
     devices = HostDiscovery.scan_subnet(subnet_cidr=target)
-    await broadcast({"type": "hosts_update", "devices": devices})
     return {"status": "success", "count": len(devices), "devices": devices}
 
 @app.post("/api/real/scan-ports")
@@ -476,7 +480,6 @@ async def trigger_port_scan(req: PortScanReq):
         raise HTTPException(status_code=403, detail=err_msg)
 
     results = PortScanner.scan_target(req.target_ip)
-    await broadcast({"type": "port_scan_result", "target_ip": req.target_ip, "results": results})
     return results
 
 @app.get("/api/export-pdf")
@@ -493,18 +496,19 @@ async def websocket_handler(websocket: WebSocket):
     active_websockets.append(websocket)
     try:
         deps_info = DependencyStatus().to_dict()
-        init_payload = {
-            "type": "init",
-            "deps": deps_info,
-            "packets": list(recent_packets)[-40:],
-            "alerts": list(recent_alerts)[-20:],
-            "hosts": await Database.get_all_devices(),
-            "sockets": current_sockets[:25],
-            "talkers": get_top_talkers_list(10),
-            "stats": stats,
-            "throughput": list(throughput_history),
-            "blocked_ips": list(FirewallManager.blocked_ips)
-        }
+        with _telemetry_lock:
+            init_payload = {
+                "type": "init",
+                "deps": deps_info,
+                "packets": list(recent_packets)[-40:],
+                "alerts": list(recent_alerts)[-20:],
+                "hosts": await Database.get_all_devices(),
+                "sockets": current_sockets[:25],
+                "talkers": get_top_talkers_list(10),
+                "stats": dict(stats),
+                "throughput": list(throughput_history),
+                "blocked_ips": list(FirewallManager.blocked_ips)
+            }
         await websocket.send_json(init_payload)
         while True:
             await websocket.receive_text()

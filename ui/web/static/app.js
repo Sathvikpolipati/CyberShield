@@ -30,6 +30,7 @@ const throughputChart = new Chart(ctxThroughput, {
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: { duration: 0 },
         scales: {
             x: { display: false },
             y: {
@@ -57,6 +58,7 @@ const protocolChart = new Chart(ctxProtocol, {
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: { duration: 0 },
         plugins: { legend: { display: false } },
         cutout: '72%'
     }
@@ -87,7 +89,7 @@ function switchTab(tabName) {
     else if (tabName === 'hosts') renderHosts();
 }
 
-// Connect WebSocket with Exponential Backoff + Live Sync
+// Connect WebSocket with Automatic Recovery
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -126,12 +128,19 @@ function connectWebSocket() {
                     throughputChart.update();
                 }
             } else if (data.type === 'tick') {
-                updateMetrics(data.stats, data.threat_level);
+                if (data.stats) updateMetrics(data.stats, data.threat_level);
                 if (data.throughput) {
                     throughputChart.data.datasets[0].data = data.throughput;
                     throughputChart.update();
                 }
                 if (data.protocols) updateProtocols(data.protocols);
+                if (data.new_packets && data.new_packets.length > 0) {
+                    for (let i = data.new_packets.length - 1; i >= 0; i--) {
+                        packetsCache.unshift(data.new_packets[i]);
+                    }
+                    if (packetsCache.length > 100) packetsCache.length = 100;
+                    if (currentTab === 'hud') renderPackets();
+                }
                 if (data.sockets) {
                     socketsCache = data.sockets;
                     if (currentTab === 'sockets') renderFullSockets();
@@ -141,21 +150,6 @@ function connectWebSocket() {
                     if (currentTab === 'talkers') renderTalkers();
                 }
                 if (data.blocked_ips) blockedIpsCache = data.blocked_ips;
-            } else if (data.type === 'packet') {
-                packetsCache.unshift(data.packet);
-                if (packetsCache.length > 100) packetsCache.pop();
-                if (currentTab === 'hud') renderPackets();
-            } else if (data.type === 'alert') {
-                alertsCache.unshift(data.alert);
-                renderAlerts();
-                renderFullThreats();
-            } else if (data.type === 'hosts_update') {
-                hostsCache = data.devices || [];
-                renderHosts();
-            } else if (data.type === 'firewall_update') {
-                blockedIpsCache = data.blocked_ips || [];
-                renderFullThreats();
-                renderTalkers();
             }
         } catch (e) {
             console.debug('WS parse error:', e);
@@ -171,25 +165,37 @@ function connectWebSocket() {
             txt.className = 'text-amber-400 font-bold';
         }
         setTimeout(connectWebSocket, reconnectDelay);
-        reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
+        reconnectDelay = Math.min(reconnectDelay * 1.5, 5000);
     };
 }
 
-// Fallback Poller for bulletproof reliability
+// Fallback background polling every 2s
 setInterval(async () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            const res = await fetch('/api/stats');
-            const s = await res.json();
+            const [statsRes, pktsRes, altsRes] = await Promise.all([
+                fetch('/api/stats'),
+                fetch('/api/packets'),
+                fetch('/api/alerts')
+            ]);
+            const s = await statsRes.json();
+            const p = await pktsRes.json();
+            const a = await altsRes.json();
+
             updateMetrics(s, s.threat_level);
             if (s.throughput) {
                 throughputChart.data.datasets[0].data = s.throughput;
                 throughputChart.update();
             }
             if (s.protocols) updateProtocols(s.protocols);
-            if (s.talkers) {
-                talkersCache = s.talkers;
-                if (currentTab === 'talkers') renderTalkers();
+            if (Array.isArray(p)) {
+                packetsCache = p;
+                if (currentTab === 'hud') renderPackets();
+            }
+            if (Array.isArray(a)) {
+                alertsCache = a;
+                renderAlerts();
+                if (currentTab === 'threats') renderFullThreats();
             }
         } catch (e) {}
     }
@@ -524,6 +530,12 @@ async function simulateAttack(type) {
             body: JSON.stringify({ attack_type: type })
         });
         const data = await res.json();
+        if (data.active_threats) {
+            const altsRes = await fetch('/api/alerts');
+            alertsCache = await altsRes.json();
+            renderAlerts();
+            if (currentTab === 'threats') renderFullThreats();
+        }
     } catch (e) {
         console.error(e);
     }
