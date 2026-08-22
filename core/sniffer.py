@@ -21,7 +21,7 @@ class LiveSniffer:
     """
     Ultra-High-Performance Multi-Tier Capture & Defense Sniffer Engine.
     Tier 1: Native Promiscuous Raw IP Socket (Windows / Linux / Rooted Termux).
-    Tier 2: Asynchronous Real Hardware I/O Sockets & Telemetry Sampler.
+    Tier 2: Asynchronous Real Hardware I/O Sockets & Network Telemetry Sampler.
     Tier 3: Active Defense Drop Cache (0.0ms drop for blocked attacker IPs).
     """
     def __init__(self, packet_queue: queue.Queue, interface: Optional[str] = None):
@@ -34,7 +34,10 @@ class LiveSniffer:
         self._counter = 0
         self.cached_sockets: List[Dict[str, Any]] = []
         self._pname_cache: Dict[int, str] = {}
-        self._last_io = psutil.net_io_counters()
+        try:
+            self._last_io = psutil.net_io_counters()
+        except Exception:
+            self._last_io = None
         self._last_io_time = time.time()
 
     def _try_raw_socket_capture(self, host_ip: str) -> bool:
@@ -126,7 +129,7 @@ class LiveSniffer:
 
     def _worker(self):
         net_info = NetworkInterfaceManager.get_primary_interface()
-        host_ip = net_info["local_ip"]
+        host_ip = net_info.get("local_ip", "127.0.0.1")
         has_raw = self._try_raw_socket_capture(host_ip)
 
         logger.info("CyberShield Live Capture Engine running in %s mode.", self.active_engine)
@@ -151,7 +154,7 @@ class LiveSniffer:
 
                 # 2. Continuous Real Hardware Connection & Socket Telemetry
                 now = time.time()
-                if now - last_socket_poll >= 0.2:
+                if now - last_socket_poll >= 0.15:
                     last_socket_poll = now
                     try:
                         conns = psutil.net_connections(kind="inet")
