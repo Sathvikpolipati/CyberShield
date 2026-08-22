@@ -44,7 +44,7 @@ os.makedirs(static_dir, exist_ok=True)
 templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")
 
-# Thread-Safe Telemetry Storage
+# Thread-Safe Telemetry Storage (Reentrant Lock to prevent self-deadlocks)
 recent_packets: deque = deque(maxlen=Config.PACKET_HISTORY_LIMIT)
 pending_new_packets: deque = deque(maxlen=200)
 recent_alerts: deque = deque(maxlen=Config.ALERT_HISTORY_LIMIT)
@@ -53,7 +53,7 @@ current_sockets: List[Dict[str, Any]] = []
 top_talkers_pkts: Counter = Counter()
 top_talkers_bytes: Counter = Counter()
 _pname_cache: Dict[int, str] = {}
-_telemetry_lock = threading.Lock()
+_telemetry_lock = threading.RLock()
 
 detection_engine: Optional[Any] = None
 live_sniffer: Optional[Any] = None
@@ -141,7 +141,7 @@ async def socket_poller_task():
             logger.debug("psutil socket poller exception: %s", e)
         await asyncio.sleep(Config.SOCKET_POLL_INTERVAL)
 
-# Ultra-Smooth 250ms Event-Loop Broadcast Task (Zero Concurrency Conflicts)
+# Ultra-Smooth 250ms Event-Loop Broadcast Task
 async def ws_broadcast_task():
     global _last_pkt_count, _last_byte_count, _last_tick_time
     while True:
@@ -170,6 +170,9 @@ async def ws_broadcast_task():
             while pending_new_packets:
                 new_pkts_list.append(pending_new_packets.popleft())
 
+            talkers = get_top_talkers_list(10)
+            blocked_list = FirewallManager.get_blocked_ips()
+
             payload = {
                 "type": "tick",
                 "stats": dict(stats),
@@ -178,11 +181,11 @@ async def ws_broadcast_task():
                 "protocols": dict(stats["protocols"]),
                 "new_packets": new_pkts_list,
                 "sockets": current_sockets[:25],
-                "talkers": get_top_talkers_list(10),
-                "blocked_ips": list(FirewallManager.blocked_ips)
+                "talkers": talkers,
+                "blocked_ips": blocked_list
             }
 
-        # Safe Single-Coro WebSocket Dispatch
+        # Safe WebSocket Dispatch
         disconnected = []
         for ws in list(active_websockets):
             try:
@@ -286,6 +289,8 @@ async def get_status():
 async def get_stats():
     with _telemetry_lock:
         threat_level = "CRITICAL" if stats["active_threats"] > 3 else ("ELEVATED" if stats["active_threats"] > 0 else "NOMINAL")
+        talkers = get_top_talkers_list(15)
+        blocked_list = FirewallManager.get_blocked_ips()
         return {
             "total_packets": stats["total_packets"],
             "total_bytes": stats["total_bytes"],
@@ -296,9 +301,9 @@ async def get_stats():
             "threat_level": threat_level,
             "protocols": dict(stats["protocols"]),
             "throughput": list(throughput_history),
-            "talkers": get_top_talkers_list(15),
+            "talkers": talkers,
             "autoblock_enabled": FirewallManager.autoblock_enabled,
-            "blocked_ips": list(FirewallManager.blocked_ips)
+            "blocked_ips": blocked_list
         }
 
 @app.get("/api/alerts")
@@ -505,6 +510,8 @@ async def websocket_handler(websocket: WebSocket):
     try:
         deps_info = DependencyStatus().to_dict()
         with _telemetry_lock:
+            talkers = get_top_talkers_list(10)
+            blocked_list = FirewallManager.get_blocked_ips()
             init_payload = {
                 "type": "init",
                 "deps": deps_info,
@@ -512,10 +519,10 @@ async def websocket_handler(websocket: WebSocket):
                 "alerts": list(recent_alerts)[-20:],
                 "hosts": Database.get_all_devices_sync(),
                 "sockets": current_sockets[:25],
-                "talkers": get_top_talkers_list(10),
+                "talkers": talkers,
                 "stats": dict(stats),
                 "throughput": list(throughput_history),
-                "blocked_ips": list(FirewallManager.blocked_ips)
+                "blocked_ips": blocked_list
             }
         await websocket.send_json(init_payload)
         while True:
