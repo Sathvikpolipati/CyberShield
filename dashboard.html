@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>CyberShield | Real-Time Live Network Traffic Analyser & Threat Defense SOC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -54,6 +57,20 @@
         }
         .glass-panel:hover {
             border-color: rgba(0, 220, 255, 0.35) !important;
+        }
+    
+        @keyframes blinkGreenGlow {
+            0%, 100% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 12px #10b981, 0 0 4px #34d399; }
+            50% { opacity: 0.25; transform: scale(0.85); box-shadow: 0 0 2px #10b981; }
+        }
+        .live-green-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: blinkGreenGlow 1.2s infinite ease-in-out;
         }
     </style>
 </head>
@@ -151,7 +168,7 @@
                 </div>
                 <div class="glass-panel p-5 rounded-2xl">
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">DYNAMIC THREAT LEVEL</p>
-                    <h3 id="statThreatLevel" class="text-3xl font-bold font-mono text-emerald-400 mt-1">NOMINAL</h3>
+                    <h3 id="statThreatLevel" class="text-3xl font-bold font-mono text-emerald-400 mt-1">NORMAL</h3>
                     <p class="mt-2 text-xs text-slate-400 font-mono">Real-time status</p>
                 </div>
             </div>
@@ -176,10 +193,11 @@
                     <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden">
                         <div class="flex items-center justify-between mb-1 z-10">
                             <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> 3D Cyber Traffic Globe
+                                <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Cyber Traffic Monitor
                             </h3>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950/80 text-cyan-300 border border-cyan-500/30">
-                                LIVE 3D
+                            <span class="text-[11px] font-mono px-2.5 py-1 rounded-md bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 flex items-center gap-2 shadow-md shadow-emerald-500/30">
+                                <span class="live-green-dot"></span>
+                                <span class="font-bold text-emerald-400 tracking-wider">LIVE</span>
                             </span>
                         </div>
                         

@@ -430,7 +430,7 @@ function initStaticSimulation() {
             window.spawnGlobeTrafficArc(chosenProto);
         }
 
-        updateMetrics(simStats, simStats.active_threats > 0 ? 'CRITICAL' : 'NOMINAL');
+        updateMetrics(simStats, simStats.active_threats > 0 ? 'CRITICAL' : 'NORMAL');
         updateProtocols(simStats.protocols);
         if (currentTab === 'hud') renderPackets();
     }, 450);
@@ -482,7 +482,7 @@ function connectWebSocket() {
                 if (currentTab === 'talkers') renderTalkers();
                 if (currentTab === 'hosts') renderHosts();
                 if (currentTab === 'sockets') renderFullSockets();
-                if (data.stats) updateMetrics(data.stats, data.threat_level || 'NOMINAL');
+                if (data.stats) updateMetrics(data.stats, data.threat_level || 'NORMAL');
                 if (data.throughput && throughputChart) {
                     throughputChart.data.datasets[0].data = data.throughput;
                     throughputChart.update();
@@ -562,7 +562,7 @@ function updateMetrics(s, threatLevel) {
 
     const tElem = document.getElementById('statThreatLevel');
     if (tElem) {
-        tElem.textContent = threatLevel || 'NOMINAL';
+        tElem.textContent = threatLevel || 'NORMAL';
         if (threatLevel === 'CRITICAL') {
             tElem.className = 'text-3xl font-bold font-mono text-red-500 animate-pulse';
         } else if (threatLevel === 'ELEVATED') {
