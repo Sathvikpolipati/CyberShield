@@ -14,6 +14,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Requ
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 from config import Config
 from core.env_checker import EnvironmentChecker, DependencyStatus
@@ -32,13 +33,16 @@ logging.getLogger("fastapi").setLevel(logging.WARNING)
 
 app = FastAPI(title="CyberShield Live SOC Dashboard", version="2.5.0")
 
+# Enable GZip Compression for instant network transfers (70-80% smaller payloads)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(templates_dir, exist_ok=True)
 os.makedirs(static_dir, exist_ok=True)
 
 templates = Jinja2Templates(directory=templates_dir)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")
 
 # Thread-Safe Telemetry Storage
 recent_packets: deque = deque(maxlen=Config.PACKET_HISTORY_LIMIT)
@@ -318,7 +322,7 @@ async def get_packets():
 
 @app.get("/api/hosts")
 async def get_hosts():
-    return await Database.get_all_devices()
+    return Database.get_all_devices_sync()
 
 @app.get("/api/sockets")
 async def get_sockets():
@@ -352,7 +356,6 @@ async def simulate_attack(req: AttackSimReq):
     attacker_ip = f"10.173.122.{random.randint(100, 250)}"
     target_ip = NetworkInterfaceManager.get_primary_interface()["local_ip"]
 
-    # Generate synthetic attack sequence
     if att_type in ["port_scan", "scan"]:
         for port in [21, 22, 23, 25, 53, 80, 110, 135, 139, 443, 445, 1433, 3306, 3389, 5432, 8080]:
             pkt = PacketSummary(
@@ -507,7 +510,7 @@ async def websocket_handler(websocket: WebSocket):
                 "deps": deps_info,
                 "packets": list(recent_packets)[-40:],
                 "alerts": list(recent_alerts)[-20:],
-                "hosts": await Database.get_all_devices(),
+                "hosts": Database.get_all_devices_sync(),
                 "sockets": current_sockets[:25],
                 "talkers": get_top_talkers_list(10),
                 "stats": dict(stats),

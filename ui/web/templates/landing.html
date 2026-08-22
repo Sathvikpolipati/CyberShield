@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Security built into every system layer | CyberShield</title>
+
+<!-- Preconnect & Asynchronous Fonts for Zero-Latency Render -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,13 +14,13 @@
 @font-face {
   font-family: 'SG';
   src: url('https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPb54C_k3.woff2') format('woff2');
-  font-display: block;
+  font-display: swap;
   font-weight: 300 700;
 }
 @font-face {
   font-family: 'JB';
   src: url('https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxTOlOV.woff2') format('woff2');
-  font-display: block;
+  font-display: swap;
   font-weight: 300 800;
 }
 
@@ -75,7 +77,7 @@ html, body {
   background: #000;
   color: var(--ink);
   overflow: hidden;
-  font-family: 'JB', monospace;
+  font-family: 'JB', ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
@@ -103,7 +105,7 @@ body {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: #000;
+  background: radial-gradient(circle at 75% 35%, #0d121f 0%, #000000 80%);
 }
 
 .bg, .bg2 {
@@ -287,7 +289,7 @@ nav.main-nav {
   background: var(--red);
   color: #fff;
   text-decoration: none;
-  border-radius: 0 !important; /* Sharp corners */
+  border-radius: 0 !important;
   border: none;
   cursor: pointer;
   width: calc(212 * var(--s));
@@ -696,16 +698,16 @@ html.intro .v-rule {
 </svg>
 
 <div class="screen">
-  <!-- 1. Background Video Layer 1 -->
+  <!-- 1. Background Video Layer 1 (Optimized Preload) -->
   <div class="bg">
-    <video class="bg-vid" autoplay muted loop playsinline preload="auto">
+    <video class="bg-vid" autoplay muted loop playsinline preload="metadata">
       <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" type="video/mp4">
     </video>
   </div>
 
   <!-- 2. Background Video Layer 2 -->
   <div class="bg2">
-    <video class="bg-vid" autoplay muted loop playsinline preload="auto">
+    <video class="bg-vid" autoplay muted loop playsinline preload="none">
       <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" type="video/mp4">
     </video>
   </div>
@@ -820,11 +822,7 @@ html.intro .v-rule {
 
   <!-- Mobile Menu Overlay -->
   <div id="menu" class="menu">
-    <div class="menu-tex">
-      <video class="bg-vid" autoplay muted loop playsinline preload="auto">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" type="video/mp4">
-      </video>
-    </div>
+    <div class="menu-tex" id="menuTex"></div>
     <div class="menu-rule"></div>
     <div class="menu-eyebrow">MENU</div>
     <ul class="menu-list">
@@ -867,14 +865,14 @@ html.intro .v-rule {
 </div>
 
 <script>
-// Video Sync Engine
+// Efficient Video Sync & Lazy Loading
 (function() {
   const vids = Array.from(document.querySelectorAll('video.bg-vid'));
   if (vids.length > 1) {
     const master = vids[0];
     master.addEventListener('timeupdate', () => {
       for (let i = 1; i < vids.length; i++) {
-        if (Math.abs(vids[i].currentTime - master.currentTime) > 0.12) {
+        if (Math.abs(vids[i].currentTime - master.currentTime) > 0.15) {
           vids[i].currentTime = master.currentTime;
         }
       }
@@ -882,11 +880,21 @@ html.intro .v-rule {
   }
 })();
 
-// Accordion & Burger Logic
+// Accordion & Burger Logic (Loads Mobile Video on Demand)
 const burgerBtn = document.getElementById('burgerBtn');
+let menuVidLoaded = false;
+
 burgerBtn.addEventListener('click', () => {
   const isOpen = document.body.classList.toggle('nav-open');
   burgerBtn.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+  
+  if (isOpen && !menuVidLoaded) {
+    menuVidLoaded = true;
+    const tex = document.getElementById('menuTex');
+    if (tex) {
+      tex.innerHTML = `<video class="bg-vid" autoplay muted loop playsinline preload="auto"><source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" type="video/mp4"></video>`;
+    }
+  }
 });
 
 function toggleAccordion(id) {
@@ -911,7 +919,7 @@ window.addEventListener('resize', () => {
   }
 });
 
-// WAAPI One-Shot Master Entrance Animation Choreography
+// Instant Zero-Latency WAAPI One-Shot Entrance
 (function() {
   if (!document.documentElement.classList.contains('intro')) return;
 
@@ -1078,15 +1086,12 @@ window.addEventListener('resize', () => {
     }, 2800 * timeScale);
   }
 
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => requestAnimationFrame(runEntrance));
-  } else {
-    window.addEventListener('DOMContentLoaded', () => requestAnimationFrame(runEntrance));
-  }
+  // Execute immediately without waiting for slow network assets
+  requestAnimationFrame(runEntrance);
 
   setTimeout(() => {
     document.documentElement.classList.remove('intro');
-  }, 4000);
+  }, 3500);
 })();
 </script>
 
