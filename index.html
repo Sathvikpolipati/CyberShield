@@ -1301,7 +1301,7 @@ sudo ./venv/bin/python run_web.py</code>
       </div>
       <div style="display: flex; gap: 10px;">
         <button type="button" onclick="closeTermsModal()" class="btn-secondary" style="padding: 8px 18px; font-size: 13px;">Close</button>
-        <button type="button" onclick="acceptTermsAndCloseModal()" class="btn-primary" style="padding: 8px 24px; font-size: 13px; background:#10b981; border-color:#10b981; color:#fff;">
+        <button type="button" onclick="acceptTermsAndLaunchSOC()" class="btn-primary" style="padding: 8px 24px; font-size: 13px; background:#10b981; border-color:#10b981; color:#fff;">
           ✓ I Agree &amp; Accept Terms
         </button>
       </div>
@@ -2013,10 +2013,13 @@ function onTermsCheckboxToggle(checkbox) {
   }
 }
 
+let pendingLaunchUrl = 'dashboard.html';
+
 function handleLaunchSOC(e, targetUrl) {
   if (!targetUrl) targetUrl = 'dashboard.html';
+  pendingLaunchUrl = targetUrl;
   const checkbox = document.getElementById('termsCheckbox');
-  const isAccepted = checkbox && checkbox.checked;
+  const isAccepted = (checkbox && checkbox.checked) || (localStorage.getItem('cybershield_terms_accepted') === 'true');
 
   if (!isAccepted) {
     if (e) {
@@ -2028,20 +2031,33 @@ function handleLaunchSOC(e, targetUrl) {
     
     if (termsCard) {
       termsCard.classList.remove('terms-shake');
-      void termsCard.offsetWidth; // trigger reflow
+      void termsCard.offsetWidth;
       termsCard.classList.add('terms-shake');
-      termsCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     if (warningMsg) {
       warningMsg.classList.add('show');
       setTimeout(() => { if (warningMsg) warningMsg.classList.remove('show'); }, 4500);
     }
+    
+    // Automatically open the Terms Modal so user can accept with 1 click!
+    openTermsModal(e);
     return false;
   }
 
-  try { localStorage.setItem('cybershield_terms_accepted', 'true'); } catch (e) {}
+  try { localStorage.setItem('cybershield_terms_accepted', 'true'); } catch (err) {}
   window.location.href = targetUrl;
   return true;
+}
+
+function acceptTermsAndLaunchSOC() {
+  const checkbox = document.getElementById('termsCheckbox');
+  if (checkbox) {
+    checkbox.checked = true;
+    onTermsCheckboxToggle(checkbox);
+  }
+  try { localStorage.setItem('cybershield_terms_accepted', 'true'); } catch (err) {}
+  closeTermsModal();
+  window.location.href = pendingLaunchUrl || 'dashboard.html';
 }
 
 function openTermsModal(e) {
@@ -2064,19 +2080,6 @@ function closeTermsModal() {
 function handleTermsModalBackdropClick(e) {
   if (e.target && e.target.id === 'termsModal') {
     closeTermsModal();
-  }
-}
-
-function acceptTermsAndCloseModal() {
-  const checkbox = document.getElementById('termsCheckbox');
-  if (checkbox) {
-    checkbox.checked = true;
-    onTermsCheckboxToggle(checkbox);
-  }
-  closeTermsModal();
-  const termsCard = document.getElementById('termsCard');
-  if (termsCard) {
-    termsCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
 
