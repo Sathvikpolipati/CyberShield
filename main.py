@@ -150,14 +150,6 @@ def run_service(args):
 
     tui_dashboard = TerminalDashboard(mode="Multi-Platform Real-Time") if args.ui in ["terminal", "both"] else None
 
-    loop = asyncio.new_event_loop()
-    def run_async_loop(al):
-        asyncio.set_event_loop(al)
-        al.run_forever()
-
-    async_thread = threading.Thread(target=run_async_loop, args=(loop,), daemon=True)
-    async_thread.start()
-
     running = True
 
     # Immortal, crash-proof packet consumer thread
@@ -177,11 +169,28 @@ def run_service(args):
 
                 alerts = detection_engine.analyze_packet(pkt)
                 pkt_dict = pkt.model_dump()
-                web_module.recent_packets.append(pkt_dict)
-                web_module.stats["total_packets"] += 1
-                web_module.stats["total_bytes"] += pkt.length
-                p_name = pkt.protocol.value
-                web_module.stats["protocols"][p_name] = web_module.stats["protocols"].get(p_name, 0) + 1
+
+                with web_module._telemetry_lock:
+                    web_module.recent_packets.append(pkt_dict)
+                    web_module.pending_new_packets.append(pkt_dict)
+                    web_module.stats["total_packets"] += 1
+                    web_module.stats["total_bytes"] += pkt.length
+                    p_name = pkt.protocol.value
+                    web_module.stats["protocols"][p_name] = web_module.stats["protocols"].get(p_name, 0) + 1
+
+                    if pkt.src_ip:
+                        web_module.top_talkers_pkts[pkt.src_ip] += 1
+                        web_module.top_talkers_bytes[pkt.src_ip] += pkt.length
+                    if pkt.dst_ip:
+                        web_module.top_talkers_pkts[pkt.dst_ip] += 1
+                        web_module.top_talkers_bytes[pkt.dst_ip] += pkt.length
+
+                    for alert in alerts:
+                        web_module.recent_alerts.append(alert)
+                        web_module.stats["alert_count"] += 1
+                        web_module.stats["active_threats"] += 1
+                        if tui_dashboard:
+                            tui_dashboard.update_alert(alert)
 
                 if tui_dashboard:
                     tui_dashboard.update_packet(pkt)
@@ -189,32 +198,6 @@ def run_service(args):
                     if now - last_sock_sync >= 1.0:
                         last_sock_sync = now
                         tui_dashboard.update_sockets_from_sniffer(sniffer.cached_sockets)
-
-                if web_module.active_websockets:
-                    try:
-                        asyncio.run_coroutine_threadsafe(
-                            web_module.broadcast({"type": "packet", "packet": pkt_dict}),
-                            loop
-                        )
-                    except Exception:
-                        pass
-
-                for alert in alerts:
-                    web_module.recent_alerts.append(alert)
-                    web_module.stats["alert_count"] += 1
-                    web_module.stats["active_threats"] += 1
-
-                    if tui_dashboard:
-                        tui_dashboard.update_alert(alert)
-
-                    if web_module.active_websockets:
-                        try:
-                            asyncio.run_coroutine_threadsafe(
-                                web_module.broadcast({"type": "alert", "alert": alert}),
-                                loop
-                            )
-                        except Exception:
-                            pass
 
                 packet_queue.task_done()
 
@@ -231,13 +214,6 @@ def run_service(args):
         if args.ui == "terminal":
             from rich.live import Live
 
-            # Enable Mouse Tracking in Terminal (SGR Mode)
-            try:
-                sys.stdout.write("\x1b[?1000h\x1b[?1002h\x1b[?1006h")
-                sys.stdout.flush()
-            except Exception:
-                pass
-
             # Live screen instance
             live = Live(tui_dashboard.render(), screen=True, auto_refresh=False, console=tui_dashboard.console)
             live.start()
@@ -253,11 +229,12 @@ def run_service(args):
                     orig_mode = wintypes.DWORD()
                     kernel32.GetConsoleMode(h_in, ctypes.byref(orig_mode))
                     
-                    # Enable Mouse Input & Extended flags in Windows Console
-                    ENABLE_MOUSE_INPUT = 0x0010
+                    # Enable Windows Console QuickEdit mode (native text selection, mouse highlight & copy)
+                    ENABLE_QUICK_EDIT_MODE = 0x0040
                     ENABLE_EXTENDED_FLAGS = 0x0080
                     ENABLE_WINDOW_INPUT = 0x0008
-                    kernel32.SetConsoleMode(h_in, orig_mode.value | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS | ENABLE_WINDOW_INPUT)
+                    ENABLE_PROCESSED_INPUT = 0x0001
+                    kernel32.SetConsoleMode(h_in, (orig_mode.value & ~0x0010) | ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS | ENABLE_WINDOW_INPUT | ENABLE_PROCESSED_INPUT)
 
                     ir = (INPUT_RECORD * 16)()
                     read_count = wintypes.DWORD()
@@ -279,16 +256,14 @@ def run_service(args):
                                         
                                         # 1. MOUSE EVENT (Native Wheel Detection)
                                         if rec.EventType == 0x0002:
-                                            me = rec.Event.MouseEvent
-                                            # MOUSE_WHEELED = 0x0004
-                                            if me.dwEventFlags == 0x0004:
-                                                # Check high word of button state (signed)
-                                                btn = ctypes.c_int32(me.dwButtonState).value
-                                                if btn > 0:
-                                                    tui_dashboard.scroll_up(2)  # Wheel Up
-                                                else:
-                                                    tui_dashboard.scroll_down(2)  # Wheel Down
-                                                live.update(tui_dashboard.render(), refresh=True)
+                                             me = rec.Event.MouseEvent
+                                             if me.dwEventFlags == 0x0004:
+                                                 btn = ctypes.c_int32(me.dwButtonState).value
+                                                 if btn > 0:
+                                                     tui_dashboard.scroll_up(2)
+                                                 else:
+                                                     tui_dashboard.scroll_down(2)
+                                                 live.update(tui_dashboard.render(), refresh=True)
 
                                         # 2. KEY EVENT
                                         elif rec.EventType == 0x0001:
@@ -297,7 +272,7 @@ def run_service(args):
                                                 vk = ke.wVirtualKeyCode
                                                 uch = ke.UnicodeChar
 
-                                                # Ctrl+C (vk 0x43 with Ctrl) or Ctrl+D
+                                                # Ctrl+C or Ctrl+D
                                                 if uch in ['\x03', '\x04'] or (vk == 0x43 and (ke.dwControlKeyState & 0x0008 or ke.dwControlKeyState & 0x0004)):
                                                     running = False
                                                     break
@@ -397,13 +372,6 @@ def run_service(args):
                 except Exception as e:
                     logger.debug("Live render refresh exception: %s", e)
 
-            # Disable Mouse Tracking on exit
-            try:
-                sys.stdout.write("\x1b[?1000l\x1b[?1002l\x1b[?1006l")
-                sys.stdout.flush()
-            except Exception:
-                pass
-
             live.stop()
         else:
             import uvicorn
@@ -422,11 +390,6 @@ def run_service(args):
     finally:
         running = False
         sniffer.stop()
-        try:
-            sys.stdout.write("\x1b[?1000l\x1b[?1002l\x1b[?1006l")
-            sys.stdout.flush()
-        except Exception:
-            pass
         if os.path.exists(Config.PID_FILE):
             try:
                 os.remove(Config.PID_FILE)

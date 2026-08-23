@@ -19,8 +19,8 @@ class FirewallManager:
     """
     _blocked_ips: Set[str] = set()
     _blocked_metadata: Dict[str, Dict[str, Any]] = {}
-    _lock = threading.Lock()
-    autoblock_enabled: bool = False
+    _lock = threading.RLock()
+    autoblock_enabled: bool = True
 
     @classmethod
     def init(cls):
@@ -38,7 +38,13 @@ class FirewallManager:
 
     @classmethod
     def is_ip_blocked(cls, ip: str) -> bool:
-        return ip in cls._blocked_ips
+        with cls._lock:
+            return ip in cls._blocked_ips
+
+    @classmethod
+    def get_blocked_ips(cls) -> List[str]:
+        with cls._lock:
+            return list(cls._blocked_ips)
 
     @classmethod
     def block_ip(cls, ip: str, reason: str = "Threat Detected / Admin Block") -> Dict[str, Any]:

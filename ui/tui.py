@@ -416,7 +416,7 @@ class TerminalDashboard:
             posture = "ELEVATED"
         else:
             threat_color = "bold green"
-            posture = "NOMINAL"
+            posture = "NORMAL"
 
         # Active Defense Status
         blocked_count = len(FirewallManager._blocked_ips)
@@ -483,7 +483,7 @@ class TerminalDashboard:
             table.add_row(f"INC-{i:03d}", s_tag, rule, att, tgt, status_act)
 
         if not view_alerts:
-            table.add_row("SAFE", "[bold green]NOMINAL[/bold green]", "Zero active threat incidents detected.", "--", "--", "[bold green]All Network Endpoints Secure[/bold green]")
+            table.add_row("SAFE", "[bold green]NORMAL[/bold green]", "Zero active threat incidents detected.", "--", "--", "[bold green]All Network Endpoints Secure[/bold green]")
 
         blocked = FirewallManager.get_all_blocked()
         blocked_txt = ", ".join(b["ip"] for b in blocked[:4]) if blocked else "None"

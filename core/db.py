@@ -123,6 +123,10 @@ class Database:
             return []
 
     @classmethod
+    async def get_all_blocked_ips(cls) -> List[Dict[str, Any]]:
+        return cls.get_all_blocked_ips_sync()
+
+    @classmethod
     def upsert_device_sync(cls, device: Dict[str, Any]):
         now = time.strftime("%Y-%m-%d %H:%M:%S")
         try:
@@ -168,6 +172,10 @@ class Database:
             return []
 
     @classmethod
+    async def get_all_devices(cls) -> List[Dict[str, Any]]:
+        return cls.get_all_devices_sync()
+
+    @classmethod
     def save_alert_sync(cls, alert_data: Dict[str, Any]):
         try:
             with cls.get_sync_connection() as conn:
@@ -188,6 +196,10 @@ class Database:
             logger.debug("DB save alert error: %s", e)
 
     @classmethod
+    async def save_alert(cls, alert_data: Dict[str, Any]):
+        cls.save_alert_sync(alert_data)
+
+    @classmethod
     def get_recent_alerts_sync(cls, limit: int = 50) -> List[Dict[str, Any]]:
         try:
             with cls.get_sync_connection() as conn:
@@ -198,3 +210,7 @@ class Database:
         except Exception as e:
             logger.debug("DB get recent alerts error: %s", e)
             return []
+
+    @classmethod
+    async def get_recent_alerts(cls, limit: int = 50) -> List[Dict[str, Any]]:
+        return cls.get_recent_alerts_sync(limit)
