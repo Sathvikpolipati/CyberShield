@@ -2083,6 +2083,19 @@ function handleTermsModalBackdropClick(e) {
   }
 }
 
+function acceptTermsAndLaunchSOC() {
+  const checkbox = document.getElementById('termsCheckbox');
+  if (checkbox) {
+    checkbox.checked = true;
+    onTermsCheckboxToggle(checkbox);
+  }
+  closeTermsModal();
+  const termsCard = document.getElementById('termsCard');
+  if (termsCard) {
+    termsCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
 // Restore saved acceptance on page load
 document.addEventListener('DOMContentLoaded', () => {
   try {

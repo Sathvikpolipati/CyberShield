@@ -80,7 +80,8 @@ let globeArcs = [];
     let autoRotSpeed = 0.008;
 
     // Defined 3D Global Nodes (Latitude, Longitude in radians)
-    const nodes = [\n        { lat: 0.65, lon: -1.3, label: 'Local SOC', color: '#00dcff' },     // Local Host
+    const nodes = [
+        { lat: 0.65, lon: -1.3, label: 'Local SOC', color: '#00dcff' },     // Local Host
         { lat: 0.72, lon: -2.1, label: 'US-West Gateway', color: '#1d6dff' },// Gateway 1
         { lat: 0.70, lon: -1.25, label: 'US-East DNS', color: '#10b981' },   // Gateway 2
         { lat: 0.90, lon: 0.2, label: 'EU-North Core', color: '#1d6dff' },   // Gateway 3
@@ -878,7 +879,7 @@ function renderHosts() {
     if (!tbody) return;
 
     if (hostsCache.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-mono">Click \"SCAN LOCAL SUBNET NOW\" to discover active LAN assets.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-mono">Click "SCAN LOCAL SUBNET NOW" to discover active LAN assets.</td></tr>`;
         return;
     }
 
@@ -912,7 +913,8 @@ async function blockIP(ip) {
         const res = await fetch('/api/firewall/block', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ip, reason: 'Admin dashboard manual action' })\n        });
+            body: JSON.stringify({ ip, reason: 'Admin dashboard manual action' })
+        });
         const data = await res.json();
         if (data.success) {
             blockedIpsCache.push(ip);
@@ -1077,7 +1079,7 @@ async function openPortScanModal(ip) {
     if (!modal || !body) return;
 
     if (ipSpan) ipSpan.textContent = ip;
-    body.innerHTML = `<div class=\"py-8 text-center text-cyan-400 font-mono animate-pulse\">Running full port probe against ${ip}...</div>`;
+    body.innerHTML = `<div class="py-8 text-center text-cyan-400 font-mono animate-pulse">Running full port probe against ${ip}...</div>`;
     modal.classList.remove('hidden');
 
     if (isStaticMode) {
@@ -1089,13 +1091,13 @@ async function openPortScanModal(ip) {
                 { port: 8080, service: 'HTTP-Proxy', banner: 'CyberShield Agent v2.5' }
             ];
             body.innerHTML = `
-                <div class=\"space-y-3\">
-                    <p class=\"text-xs text-emerald-400 font-bold\">Discovered ${ports.length} Open Service Ports:</p>
-                    <div class=\"grid grid-cols-2 gap-2\">
+                <div class="space-y-3">
+                    <p class="text-xs text-emerald-400 font-bold">Discovered ${ports.length} Open Service Ports:</p>
+                    <div class="grid grid-cols-2 gap-2">
                         ${ports.map(p => `
-                            <div class=\"p-2.5 rounded bg-black/60 border border-cyan-500/30 text-xs\">
-                                <span class=\"text-cyan-400 font-bold\">Port ${p.port}</span> (${p.service})
-                                <div class=\"text-[10px] text-slate-400 truncate\">${p.banner}</div>
+                            <div class="p-2.5 rounded bg-black/60 border border-cyan-500/30 text-xs">
+                                <span class="text-cyan-400 font-bold">Port ${p.port}</span> (${p.service})
+                                <div class="text-[10px] text-slate-400 truncate">${p.banner}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -1114,23 +1116,23 @@ async function openPortScanModal(ip) {
         const data = await res.json();
         if (data.open_ports && data.open_ports.length > 0) {
             body.innerHTML = `
-                <div class=\"space-y-3\">
-                    <p class=\"text-xs text-emerald-400 font-bold\">Discovered ${data.open_ports.length} Open Service Ports:</p>
-                    <div class=\"grid grid-cols-2 gap-2\">
+                <div class="space-y-3">
+                    <p class="text-xs text-emerald-400 font-bold">Discovered ${data.open_ports.length} Open Service Ports:</p>
+                    <div class="grid grid-cols-2 gap-2">
                         ${data.open_ports.map(p => `
-                            <div class=\"p-2.5 rounded bg-black/60 border border-cyan-500/30 text-xs\">
-                                <span class=\"text-cyan-400 font-bold\">Port ${p.port}</span> (${p.service || 'Service'})
-                                <div class=\"text-[10px] text-slate-400 truncate\">${p.banner || 'Open'}</div>
+                            <div class="p-2.5 rounded bg-black/60 border border-cyan-500/30 text-xs">
+                                <span class="text-cyan-400 font-bold">Port ${p.port}</span> (${p.service || 'Service'})
+                                <div class="text-[10px] text-slate-400 truncate">${p.banner || 'Open'}</div>
                             </div>
                         `).join('')}
                     </div>
                 </div>
             `;
         } else {
-            body.innerHTML = `<div class=\"py-8 text-center text-slate-400 font-mono\">No open ports detected in standard scan range. Host is secure.</div>`;
+            body.innerHTML = `<div class="py-8 text-center text-slate-400 font-mono">No open ports detected in standard scan range. Host is secure.</div>`;
         }
     } catch(e) {
-        body.innerHTML = `<div class=\"py-8 text-center text-red-400 font-mono\">Scan error: ${e.message}</div>`;
+        body.innerHTML = `<div class="py-8 text-center text-red-400 font-mono">Scan error: ${e.message}</div>`;
     }
 }
 
@@ -1142,22 +1144,22 @@ function openPacketModal(idx) {
     if (!modal || !body) return;
 
     body.innerHTML = `
-        <div class=\"space-y-2\">
-            <div class=\"grid grid-cols-2 gap-2 text-xs\">
-                <div><span class=\"text-slate-400\">Timestamp:</span> <span class=\"text-white\">${pkt.formatted_time || '--'}</span></div>
-                <div><span class=\"text-slate-400\">Protocol:</span> <span class=\"text-cyan-400 font-bold\">${pkt.protocol}</span></div>
-                <div><span class=\"text-slate-400\">Source:</span> <span class=\"text-yellow-400\">${pkt.src_ip}${pkt.src_port ? ':' + pkt.src_port : ''}</span></div>
-                <div><span class=\"text-slate-400\">Destination:</span> <span class=\"text-emerald-400\">${pkt.dst_ip}${pkt.dst_port ? ':' + pkt.dst_port : ''}</span></div>
-                <div><span class=\"text-slate-400\">Length:</span> <span class=\"text-white\">${pkt.length} Bytes</span></div>
-                <div><span class=\"text-slate-400\">TCP Flags:</span> <span class=\"text-purple-400\">${pkt.flags || 'NONE'}</span></div>
+        <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div><span class="text-slate-400">Timestamp:</span> <span class="text-white">${pkt.formatted_time || '--'}</span></div>
+                <div><span class="text-slate-400">Protocol:</span> <span class="text-cyan-400 font-bold">${pkt.protocol}</span></div>
+                <div><span class="text-slate-400">Source:</span> <span class="text-yellow-400">${pkt.src_ip}${pkt.src_port ? ':' + pkt.src_port : ''}</span></div>
+                <div><span class="text-slate-400">Destination:</span> <span class="text-emerald-400">${pkt.dst_ip}${pkt.dst_port ? ':' + pkt.dst_port : ''}</span></div>
+                <div><span class="text-slate-400">Length:</span> <span class="text-white">${pkt.length} Bytes</span></div>
+                <div><span class="text-slate-400">TCP Flags:</span> <span class="text-purple-400">${pkt.flags || 'NONE'}</span></div>
             </div>
-            <div class=\"pt-2\">
-                <span class=\"text-slate-400 text-xs font-bold\">Packet Summary:</span>
-                <div class=\"p-2 rounded bg-black/60 border border-slate-800 text-slate-300 text-xs mt-1\">${pkt.summary || '--'}</div>
+            <div class="pt-2">
+                <span class="text-slate-400 text-xs font-bold">Packet Summary:</span>
+                <div class="p-2 rounded bg-black/60 border border-slate-800 text-slate-300 text-xs mt-1">${pkt.summary || '--'}</div>
             </div>
-            <div class=\"pt-2\">
-                <span class=\"text-slate-400 text-xs font-bold\">Raw Hex Inspector Preview:</span>
-                <pre class=\"p-3 rounded bg-black/90 border border-cyan-500/30 text-cyan-300 text-[11px] font-mono overflow-x-auto mt-1\">${pkt.raw_hex_preview || '4500003c0000400040060000'}</pre>
+            <div class="pt-2">
+                <span class="text-slate-400 text-xs font-bold">Raw Hex Inspector Preview:</span>
+                <pre class="p-3 rounded bg-black/90 border border-cyan-500/30 text-cyan-300 text-[11px] font-mono overflow-x-auto mt-1">${pkt.raw_hex_preview || '4500003c0000400040060000'}</pre>
             </div>
         </div>
     `;
