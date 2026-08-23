@@ -886,6 +886,217 @@ footer a:hover { color: #60a5fa; }
   color: #00dcff;
 }
 
+
+/* === TERMS & CONDITIONS ACCEPTANCE & GATING === */
+.terms-card {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: rgba(2, 6, 18, 0.88);
+  border: 1px solid rgba(29, 109, 255, 0.4);
+  border-radius: 12px;
+  max-width: 620px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.terms-card:hover {
+  border-color: rgba(0, 220, 255, 0.65);
+  box-shadow: 0 0 24px rgba(29, 109, 255, 0.25);
+}
+.terms-card.accepted {
+  border-color: rgba(16, 185, 129, 0.7);
+  background: rgba(2, 20, 14, 0.75);
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.2);
+}
+.terms-card.terms-shake {
+  animation: termsShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.5) !important;
+}
+@keyframes termsShake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(4px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+  40%, 60% { transform: translate3d(6px, 0, 0); }
+}
+
+.terms-checkbox-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+.terms-checkbox-container input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+.custom-checkbox-mark {
+  position: relative;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  background: rgba(6, 12, 28, 0.95);
+  border: 2px solid rgba(29, 109, 255, 0.6);
+  border-radius: 5px;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.terms-checkbox-container:hover .custom-checkbox-mark {
+  border-color: #00dcff;
+  box-shadow: 0 0 10px rgba(0, 220, 255, 0.5);
+}
+.terms-checkbox-container input:checked ~ .custom-checkbox-mark {
+  background: #10b981;
+  border-color: #10b981;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
+}
+.custom-checkbox-mark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.terms-checkbox-container input:checked ~ .custom-checkbox-mark:after {
+  display: block;
+}
+
+.terms-text {
+  font-size: 13px;
+  color: #e2e8f0;
+}
+.terms-link {
+  color: #00dcff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+.terms-link:hover {
+  color: #60a5fa;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+}
+
+.terms-status-row {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.terms-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.terms-status-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+}
+.terms-card.accepted .terms-status-badge .dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+.terms-card.accepted .terms-status-badge {
+  color: #34d399;
+}
+
+.footer-cta-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.terms-warning-msg {
+  display: none;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  padding: 8px 14px;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+  max-width: 440px;
+}
+.terms-warning-msg.show {
+  display: block;
+}
+
+/* Terms Modal Styling */
+.terms-modal-card {
+  max-width: 760px;
+}
+.terms-modal-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+.terms-modal-preamble {
+  padding: 12px 16px;
+  background: rgba(29, 109, 255, 0.1);
+  border: 1px solid rgba(29, 109, 255, 0.3);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #93c5fd;
+}
+.terms-section-block {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.terms-section-block:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.terms-section-block h4 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.terms-section-block p {
+  color: #cbd5e1;
+  font-size: 12.5px;
+}
+.terms-section-block code {
+  background: rgba(0, 0, 0, 0.5);
+  color: #00dcff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+}
+
 </style>
 </head>
 <body>
@@ -900,7 +1111,8 @@ footer a:hover { color: #60a5fa; }
   <a href="#how">How It Works</a>
   <a href="#testimonials">Testimonials</a>
   <a href="#faq">FAQ</a>
-  <a href="dashboard.html" class="btn-primary" style="margin-top:28px; justify-content:center;">
+  <a href="javascript:void(0)" onclick="openTermsModal(event)">📜 Terms &amp; Conditions</a>
+  <a href="dashboard.html" onclick="return handleLaunchSOC(event)" class="btn-primary" style="margin-top:28px; justify-content:center;">
     Launch Live SOC
     <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
   </a>
@@ -1037,6 +1249,67 @@ sudo ./venv/bin/python run_web.py</code>
   </div>
 </div>
 
+
+<!-- Interactive Terms & Conditions and Ethical Use Policy Modal -->
+<div class="modal-overlay" id="termsModal" onclick="handleTermsModalBackdropClick(event)">
+  <div class="modal-card terms-modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span style="font-size: 20px;">📜</span>
+        <span>CyberShield SOC — Terms &amp; Conditions &amp; Ethical Policy</span>
+      </div>
+      <button class="modal-close" onclick="closeTermsModal()" aria-label="Close terms modal">&times;</button>
+    </div>
+    
+    <div class="modal-body terms-modal-body">
+      <div class="terms-modal-preamble">
+        <strong>Effective Date:</strong> 2026 &nbsp;|&nbsp; <strong>Version:</strong> 2.0-SOC &nbsp;|&nbsp; <strong>License:</strong> MIT Open Source Defense
+        <p style="margin-top: 6px; color: var(--sub); font-size: 12px;">
+          By accessing or launching CyberShield SOC, you agree to comply with all applicable cybersecurity laws, ethical network guidelines, and the operational policies specified below.
+        </p>
+      </div>
+
+      <div class="terms-section-block">
+        <h4>1. 🛡️ Authorized Ownership &amp; Network Scope</h4>
+        <p>You expressly agree to run CyberShield packet sniffing, port auditing, and network telemetry analysis <strong>solely on networks, subnets, and host devices that you own or have received formal, written authorization to monitor</strong>. Unauthorized packet interception or surveillance across third-party networks is strictly prohibited under international cyber legislation (including CFAA, IT Act, and regional statutes).</p>
+      </div>
+
+      <div class="terms-section-block">
+        <h4>2. 🎯 Defensive Purpose &amp; Ethical Research</h4>
+        <p>CyberShield is engineered exclusively as a defensive Network Intrusion Detection System (NIDS), SOC telemetry analyzer, and educational cybersecurity testbed. You agree not to use CyberShield heuristics or attack simulator triggers to conduct distributed denial-of-service (DDoS), unauthorized vulnerability exploitation, or malicious penetration against non-consenting targets.</p>
+      </div>
+
+      <div class="terms-section-block">
+        <h4>3. 🔒 Active Threat Defense &amp; Firewall Auto-Mitigation</h4>
+        <p>CyberShield incorporates host operating system firewall manipulation (via <code>netsh advfirewall</code> on Windows and <code>iptables</code> on Linux/Termux) to isolate offending IP addresses. The user acknowledges that enabling automated mitigation modifies local firewall tables and assumes responsibility for whitelisting essential gateway and DNS IPs.</p>
+      </div>
+
+      <div class="terms-section-block">
+        <h4>4. 🌐 Privacy &amp; 100% Local Air-Gapped Telemetry</h4>
+        <p>CyberShield guarantees complete operational privacy. All packet headers, decoded protocol payloads, process sockets, and security logs are processed in-memory and persisted exclusively to local SQLite storage. <strong>Zero packet telemetry, IP logs, or forensic audits are transmitted to third-party cloud servers</strong>.</p>
+      </div>
+
+      <div class="terms-section-block">
+        <h4>5. ⚖️ Disclaimer of Warranty &amp; Limitation of Liability</h4>
+        <p>CyberShield is provided on an <strong>"AS IS" and "AS AVAILABLE" basis</strong> without warranty of any kind, express or implied. Under no circumstances shall the authors, maintainers, or contributors be held liable for network downtime, packet drops, packet parser panics, or unintended operational interruptions.</p>
+      </div>
+    </div>
+
+    <div class="modal-footer-cta" style="padding: 16px 24px; background: rgba(2, 6, 18, 0.95); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+      <div style="font-size: 12px; color: #94a3b8;">
+        🔒 Acceptance applies to this browser session &amp; SOC dashboard.
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" onclick="closeTermsModal()" class="btn-secondary" style="padding: 8px 18px; font-size: 13px;">Close</button>
+        <button type="button" onclick="acceptTermsAndCloseModal()" class="btn-primary" style="padding: 8px 24px; font-size: 13px; background:#10b981; border-color:#10b981; color:#fff;">
+          ✓ I Agree &amp; Accept Terms
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div class="site-wrap">
   <!-- ── NAV ── -->
   <nav class="top-nav">
@@ -1061,8 +1334,9 @@ sudo ./venv/bin/python run_web.py</code>
       <li><a href="#how">How It Works</a></li>
       <li><a href="#testimonials">Testimonials</a></li>
       <li><a href="#faq">FAQ</a></li>
+      <li><a href="javascript:void(0)" onclick="openTermsModal(event)">Terms</a></li>
       <li>
-        <a href="dashboard.html" class="btn-nav top-cta">
+        <a href="dashboard.html" onclick="return handleLaunchSOC(event)" class="btn-nav top-cta">
           Launch SOC
           <svg width="16" height="12" viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
         </a>
@@ -1107,7 +1381,7 @@ sudo ./venv/bin/python run_web.py</code>
     </p>
 
     <div class="hero-cta-row">
-      <a href="dashboard.html" class="btn-primary">
+      <a href="dashboard.html" onclick="return handleLaunchSOC(event)" class="btn-primary">
         Launch Live SOC Dashboard
         <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
       </a>
@@ -1166,7 +1440,7 @@ sudo ./venv/bin/python run_web.py</code>
           <div class="feat-title">Real-Time Packet Capture</div>
           <div class="feat-desc">Zero-driver native socket engine captures live network packets across Windows, Linux, Termux, and macOS without Npcap or WinPcap drivers.</div>
         </div>
-        <a href="dashboard.html#hud" class="feat-action">Launch Live Feed &rarr;</a>
+        <a href="dashboard.html#hud" onclick="return handleLaunchSOC(event, 'dashboard.html#hud')" class="feat-action">Launch Live Feed &rarr;</a>
       </div>
 
       <!-- Feature 2: Multi-Vector Threat Detection -->
@@ -1196,7 +1470,7 @@ sudo ./venv/bin/python run_web.py</code>
           <div class="feat-title">SOC Dashboard &amp; Telemetry</div>
           <div class="feat-desc">WebSocket-driven real-time dashboard with protocol breakdown charts, throughput sparklines, top talkers, live packet stream, and socket monitor.</div>
         </div>
-        <a href="dashboard.html#hud" class="feat-action">Open HUD Dashboard &rarr;</a>
+        <a href="dashboard.html#hud" onclick="return handleLaunchSOC(event, 'dashboard.html#hud')" class="feat-action">Open HUD Dashboard &rarr;</a>
       </div>
 
       <!-- Feature 5: Port & Subnet Scanner -->
@@ -1206,7 +1480,7 @@ sudo ./venv/bin/python run_web.py</code>
           <div class="feat-title">Port &amp; Subnet Scanner</div>
           <div class="feat-desc">Built-in LAN discovery engine scans your local subnet for open ports and active hosts — strictly bounded to your local network for safety.</div>
         </div>
-        <a href="dashboard.html#hosts" class="feat-action">Scan Local LAN &rarr;</a>
+        <a href="dashboard.html#hosts" onclick="return handleLaunchSOC(event, 'dashboard.html#hosts')" class="feat-action">Scan Local LAN &rarr;</a>
       </div>
 
       <!-- Feature 6: Executive PDF Reports -->
@@ -1226,7 +1500,7 @@ sudo ./venv/bin/python run_web.py</code>
           <div class="feat-title">Process Sockets (psutil)</div>
           <div class="feat-desc">Inspect active TCP/UDP socket connections mapped directly to native OS process names and PIDs with zero subprocess overhead.</div>
         </div>
-        <a href="dashboard.html#sockets" class="feat-action">Inspect Process Sockets &rarr;</a>
+        <a href="dashboard.html#sockets" onclick="return handleLaunchSOC(event, 'dashboard.html#sockets')" class="feat-action">Inspect Process Sockets &rarr;</a>
       </div>
 
       <!-- Feature 8: Top Bandwidth Talkers -->
@@ -1236,7 +1510,7 @@ sudo ./venv/bin/python run_web.py</code>
           <div class="feat-title">Top Bandwidth Talkers</div>
           <div class="feat-desc">Live ranking of communicating endpoints by packet volume and bandwidth consumption with one-click port scanning and defense controls.</div>
         </div>
-        <a href="dashboard.html#talkers" class="feat-action">View Top Talkers &rarr;</a>
+        <a href="dashboard.html#talkers" onclick="return handleLaunchSOC(event, 'dashboard.html#talkers')" class="feat-action">View Top Talkers &rarr;</a>
       </div>
 
       <!-- Feature 9: GZip High-Speed API -->
@@ -1246,7 +1520,7 @@ sudo ./venv/bin/python run_web.py</code>
           <div class="feat-title">GZip-Compressed Backend</div>
           <div class="feat-desc">FastAPI backend with GZipMiddleware compression (70–80% bandwidth reduction), delivering sub-100ms dashboard updates over any network.</div>
         </div>
-        <a href="dashboard.html" class="feat-action">Explore Platform &rarr;</a>
+        <a href="dashboard.html" onclick="return handleLaunchSOC(event, 'dashboard.html')" class="feat-action">Explore Platform &rarr;</a>
       </div>
     </div>
   </section>
@@ -1435,16 +1709,43 @@ sudo ./venv/bin/python run_web.py</code>
     </div>
   </section>
 
-  <!-- ── FOOTER CTA ── -->
-  <div class="footer-cta">
+  <!-- ── FOOTER CTA & TERMS ENFORCEMENT ── -->
+  <div class="footer-cta" id="cta-section">
     <div class="footer-cta-text">
       <h2>Ready to defend your network?</h2>
       <p>Launch the live SOC dashboard and start monitoring network traffic, detecting threats, and blocking attackers in real time — zero configuration required.</p>
+      
+      <!-- Interactive Terms & Conditions Acceptance Card -->
+      <div class="terms-card" id="termsCard">
+        <label class="terms-checkbox-container" for="termsCheckbox">
+          <input type="checkbox" id="termsCheckbox" onchange="onTermsCheckboxToggle(this)">
+          <span class="custom-checkbox-mark"></span>
+          <span class="terms-text">
+            I confirm authorized network ownership and agree to the 
+            <a href="javascript:void(0)" onclick="openTermsModal(event)" class="terms-link">Terms &amp; Conditions</a>, 
+            <a href="javascript:void(0)" onclick="openTermsModal(event)" class="terms-link">Ethical Use Policy</a>, 
+            and <a href="javascript:void(0)" onclick="openTermsModal(event)" class="terms-link">Air-Gap Privacy Guarantee</a>.
+          </span>
+        </label>
+        <div class="terms-status-row">
+          <div class="terms-status-badge" id="termsStatusBadge">
+            <span class="dot"></span>
+            <span id="termsStatusText">Acceptance Required to Launch SOC</span>
+          </div>
+          <a href="javascript:void(0)" onclick="openTermsModal(event)" class="terms-link" style="font-size:11px;">Read Full Policy &rarr;</a>
+        </div>
+      </div>
     </div>
-    <a href="dashboard.html" class="btn-primary" style="padding:16px 40px; font-size:16px; flex-shrink:0;">
-      Launch Live SOC Dashboard
-      <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
-    </a>
+
+    <div class="footer-cta-action">
+      <a href="dashboard.html" id="btnLaunchSOC" onclick="return handleLaunchSOC(event)" class="btn-primary btn-launch-gated" style="padding:16px 40px; font-size:16px; flex-shrink:0;">
+        <span id="btnLaunchText">Launch Live SOC Dashboard</span>
+        <svg viewBox="0 0 22 18"><path d="M0 9H20"/><path d="M12 1L20 9L12 17"/></svg>
+      </a>
+      <div id="termsWarningMsg" class="terms-warning-msg">
+        ⚠️ Please check the Terms &amp; Conditions box above to unlock the SOC Dashboard.
+      </div>
+    </div>
   </div>
 
   <!-- ── FOOTER ── -->
@@ -1458,6 +1759,7 @@ sudo ./venv/bin/python run_web.py</code>
     </div>
     <div style="display:flex; gap:24px;">
       <a href="https://github.com/Sathvikpolipati/CyberShield" target="_blank" rel="noopener">GitHub</a>
+      <a href="javascript:void(0)" onclick="openTermsModal(event)" style="color:#60a5fa; font-weight:600;">📜 Terms &amp; Conditions</a>
       <a href="dashboard.html">Live SOC</a>
       <a href="#faq">FAQ</a>
       <a href="#features">Features</a>
@@ -1684,6 +1986,113 @@ function copyInstallCode(elemId, btn) {
     console.error('Copy failed', err);
   });
 }
+
+
+// === TERMS & CONDITIONS ENFORCEMENT & MODAL HANDLERS ===
+function onTermsCheckboxToggle(checkbox) {
+  const isChecked = checkbox && checkbox.checked;
+  const termsCard = document.getElementById('termsCard');
+  const statusText = document.getElementById('termsStatusText');
+  const btnLaunch = document.getElementById('btnLaunchSOC');
+  const btnText = document.getElementById('btnLaunchText');
+  const warningMsg = document.getElementById('termsWarningMsg');
+
+  if (isChecked) {
+    if (termsCard) termsCard.classList.add('accepted');
+    if (statusText) statusText.innerText = '✓ Terms Accepted — SOC Dashboard Unlocked';
+    if (btnLaunch) btnLaunch.classList.add('unlocked');
+    if (btnText) btnText.innerText = '🚀 Launch Live SOC Dashboard';
+    if (warningMsg) warningMsg.classList.remove('show');
+    try { localStorage.setItem('cybershield_terms_accepted', 'true'); } catch (e) {}
+  } else {
+    if (termsCard) termsCard.classList.remove('accepted');
+    if (statusText) statusText.innerText = 'Acceptance Required to Launch SOC';
+    if (btnLaunch) btnLaunch.classList.remove('unlocked');
+    if (btnText) btnText.innerText = 'Launch Live SOC Dashboard';
+    try { localStorage.setItem('cybershield_terms_accepted', 'false'); } catch (e) {}
+  }
+}
+
+function handleLaunchSOC(e, targetUrl) {
+  if (!targetUrl) targetUrl = 'dashboard.html';
+  const checkbox = document.getElementById('termsCheckbox');
+  const isAccepted = checkbox && checkbox.checked;
+
+  if (!isAccepted) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const termsCard = document.getElementById('termsCard');
+    const warningMsg = document.getElementById('termsWarningMsg');
+    
+    if (termsCard) {
+      termsCard.classList.remove('terms-shake');
+      void termsCard.offsetWidth; // trigger reflow
+      termsCard.classList.add('terms-shake');
+      termsCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    if (warningMsg) {
+      warningMsg.classList.add('show');
+      setTimeout(() => { if (warningMsg) warningMsg.classList.remove('show'); }, 4500);
+    }
+    return false;
+  }
+
+  try { localStorage.setItem('cybershield_terms_accepted', 'true'); } catch (e) {}
+  window.location.href = targetUrl;
+  return true;
+}
+
+function openTermsModal(e) {
+  if (e) e.preventDefault();
+  const modal = document.getElementById('termsModal');
+  if (modal) {
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeTermsModal() {
+  const modal = document.getElementById('termsModal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+function handleTermsModalBackdropClick(e) {
+  if (e.target && e.target.id === 'termsModal') {
+    closeTermsModal();
+  }
+}
+
+function acceptTermsAndCloseModal() {
+  const checkbox = document.getElementById('termsCheckbox');
+  if (checkbox) {
+    checkbox.checked = true;
+    onTermsCheckboxToggle(checkbox);
+  }
+  closeTermsModal();
+  const termsCard = document.getElementById('termsCard');
+  if (termsCard) {
+    termsCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// Restore saved acceptance on page load
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    if (localStorage.getItem('cybershield_terms_accepted') === 'true') {
+      const checkbox = document.getElementById('termsCheckbox');
+      if (checkbox) {
+        checkbox.checked = true;
+        onTermsCheckboxToggle(checkbox);
+      }
+    }
+  } catch (e) {}
+});
+
 </script>
 </body>
 </html>
