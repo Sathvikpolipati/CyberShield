@@ -83,7 +83,7 @@
 
         <!-- Header -->
         <header class="border-b border-cyan-500/20 bg-[#050811]/75 backdrop-blur-xl sticky top-0 z-40 px-6 py-3 shadow-xl">
-            <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="w-full px-3 sm:px-6 lg:px-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div class="flex items-center space-x-4">
                     <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 p-0.5 shadow-lg shadow-cyan-500/30">
                         <div class="w-full h-full bg-[#030712] rounded-[10px] flex items-center justify-center p-1.5">
@@ -112,27 +112,27 @@
                     </div>
                 </div>
 
-                <!-- Navigation Tabs with HOME Button (Strictly Horizontal Single-Line) -->
-                <div class="flex items-center gap-1 sm:gap-1.5 bg-black/60 p-1 rounded-xl border border-cyan-500/25 backdrop-blur-md overflow-x-auto text-xs font-mono whitespace-nowrap">
-                    <a href="index.html" id="btn-nav-home" class="px-3 py-1.5 rounded-lg font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center border border-transparent hover:border-cyan-500/30 whitespace-nowrap flex-shrink-0" title="Return to Landing Page">
+                <!-- Navigation Tabs: Pure Letter Navigation (No backside placeholder, no container border) -->
+                <div class="flex items-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto text-xs font-mono whitespace-nowrap py-1">
+                    <a href="index.html" id="btn-nav-home" class="font-bold text-slate-400 hover:text-white hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] transition whitespace-nowrap flex-shrink-0 tracking-wider" title="Return to Landing Page">
                         HOME
                     </a>
-                    <button onclick="switchTab('hud')" id="tab-hud" class="px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-black shadow-md transition whitespace-nowrap flex-shrink-0">
+                    <button onclick="switchTab('hud')" id="tab-hud" class="font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(0,220,255,0.7)] hover:text-cyan-300 transition whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer">
                         HUD
                     </button>
-                    <button onclick="switchTab('threats')" id="tab-threats" class="px-3 py-1.5 rounded-lg font-bold text-red-400 hover:bg-slate-800/80 transition flex items-center gap-1 whitespace-nowrap flex-shrink-0">
-                        THREATS <span id="navThreatBadge" class="px-1.5 py-0.2 rounded bg-red-950 text-[10px] border border-red-800">0</span>
+                    <button onclick="switchTab('threats')" id="tab-threats" class="font-bold text-slate-400 hover:text-red-400 transition flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer">
+                        THREATS <span id="navThreatBadge" class="text-red-400 font-mono text-[11px] font-bold">(0)</span>
                     </button>
-                    <button onclick="switchTab('talkers')" id="tab-talkers" class="px-3 py-1.5 rounded-lg font-bold text-yellow-400 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                    <button onclick="switchTab('talkers')" id="tab-talkers" class="font-bold text-slate-400 hover:text-yellow-400 transition whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer">
                         TALKERS
                     </button>
-                    <button onclick="switchTab('sockets')" id="tab-sockets" class="px-3 py-1.5 rounded-lg font-bold text-cyan-300 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                    <button onclick="switchTab('sockets')" id="tab-sockets" class="font-bold text-slate-400 hover:text-cyan-300 transition whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer">
                         PS / SOCKETS
                     </button>
-                    <button onclick="switchTab('hosts')" id="tab-hosts" class="px-3 py-1.5 rounded-lg font-bold text-emerald-400 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                    <button onclick="switchTab('hosts')" id="tab-hosts" class="font-bold text-slate-400 hover:text-emerald-400 transition whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer">
                         LAN RADAR
                     </button>
-                    <button onclick="switchTab('manual')" id="tab-manual" class="px-3 py-1.5 rounded-lg font-bold text-purple-400 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                    <button onclick="switchTab('manual')" id="tab-manual" class="font-bold text-slate-400 hover:text-purple-400 transition whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer">
                         MANUAL
                     </button>
                 </div>
@@ -157,7 +157,7 @@
         </header>
 
         <!-- Main Dashboard Container -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-1 space-y-6">
+        <main class="w-full px-3 sm:px-6 lg:px-8 py-6 flex-1 space-y-6">
 
             <!-- 1. Top 4 Metric Cards (Transparent Glassmorphism) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

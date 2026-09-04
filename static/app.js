@@ -462,9 +462,9 @@ async function switchTab(tabName) {
         }
         if (tabEl) {
             if (t === tabName) {
-                tabEl.className = 'px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-black shadow-md transition';
+                tabEl.className = 'font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(0,220,255,0.7)] hover:text-cyan-300 transition whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer';
             } else {
-                tabEl.className = 'px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white hover:bg-slate-800/80 transition';
+                tabEl.className = 'font-bold text-slate-400 hover:text-white transition whitespace-nowrap flex-shrink-0 tracking-wider cursor-pointer';
             }
         }
     });
