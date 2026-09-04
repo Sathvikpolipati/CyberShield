@@ -54,7 +54,7 @@ if (ctxThroughput) {
 }
 
 // -------------------------------------------------------------
-// 3D CYBER GLOBE ENGINE (Real-Time Network Traffic Vector Sphere)
+// 3D CYBER WORLD GLOBE (Realistic Earth Continents & Previous Animation in Electric Blue)
 // -------------------------------------------------------------
 let globeData = { TCP: 0, UDP: 0, ICMP: 0, DNS: 0, HTTP: 0, HTTPS: 0, OTHER: 0 };
 let globeArcs = [];
@@ -74,22 +74,110 @@ let globeArcs = [];
         }
     });
 
-    const GLOBE_RADIUS = Math.min(W, H) * 0.38;
     let rotX = 0.28;
     let rotY = 0;
-    let autoRotSpeed = 0.008;
+    let autoRotSpeed = 0.007;
 
-    // Defined 3D Global Nodes (Latitude, Longitude in radians)
+    // Geographic Coordinates of Real Earth Continents (lat, lon in degrees)
+    const CONTINENTS = [
+        // Africa
+        [
+            [37, 10], [36, 1], [35, -5], [32, -9], [28, -13], [21, -17], [15, -17],
+            [11, -15], [5, -8], [4, 2], [4, 9], [2, 9], [-5, 12], [-12, 13],
+            [-22, 14], [-33, 18], [-34, 26], [-30, 31], [-25, 33], [-16, 39],
+            [-11, 40], [-4, 39], [2, 45], [11, 51], [12, 44], [13, 43], [15, 41],
+            [22, 38], [28, 33], [31, 32], [32, 25], [32, 20], [37, 10]
+        ],
+        // Europe
+        [
+            [36, -6], [37, -9], [43, -9], [43, -2], [46, -1], [48, -5], [50, 1],
+            [54, 8], [56, 8], [58, 11], [63, 7], [71, 26], [70, 31], [65, 36],
+            [58, 38], [54, 28], [46, 30], [45, 36], [41, 29], [38, 24], [36, 22],
+            [38, 15], [41, 15], [44, 12], [40, 18], [38, 16], [36, 14], [37, 8],
+            [40, 0], [36, -6]
+        ],
+        // United Kingdom & Ireland
+        [
+            [50, -5], [52, 1], [58, -3], [58, -6], [55, -5], [50, -5]
+        ],
+        // Asia
+        [
+            [41, 29], [45, 36], [47, 48], [46, 54], [54, 58], [66, 68], [73, 80],
+            [76, 112], [73, 140], [66, 170], [60, 162], [52, 141], [43, 132],
+            [38, 119], [32, 121], [22, 114], [10, 107], [8, 103], [13, 100],
+            [20, 92], [22, 89], [13, 80], [8, 77], [20, 73], [25, 67], [25, 60],
+            [13, 45], [20, 39], [31, 35], [37, 36], [41, 29]
+        ],
+        // Japan
+        [
+            [31, 131], [34, 132], [36, 136], [40, 140], [45, 142], [43, 145],
+            [38, 141], [34, 136], [31, 131]
+        ],
+        // North America
+        [
+            [71, -156], [69, -141], [70, -128], [60, -94], [58, -80], [62, -64],
+            [51, -56], [44, -66], [41, -71], [35, -75], [25, -80], [29, -89],
+            [26, -97], [19, -96], [15, -92], [9, -83], [8, -78], [14, -87],
+            [17, -100], [23, -106], [32, -117], [37, -122], [47, -124],
+            [54, -130], [59, -140], [60, -150], [55, -164], [64, -166],
+            [66, -168], [71, -156]
+        ],
+        // South America
+        [
+            [12, -72], [10, -62], [7, -58], [-2, -44], [-5, -35], [-12, -37],
+            [-23, -42], [-34, -53], [-41, -63], [-53, -68], [-55, -71],
+            [-46, -75], [-34, -72], [-18, -70], [-5, -81], [1, -79],
+            [9, -77], [12, -72]
+        ],
+        // Australia
+        [
+            [-12, 131], [-12, 136], [-15, 141], [-11, 142], [-24, 153],
+            [-33, 151], [-38, 147], [-38, 140], [-35, 136], [-32, 132],
+            [-35, 118], [-34, 115], [-25, 113], [-20, 119], [-16, 124],
+            [-14, 129], [-12, 131]
+        ],
+        // Greenland
+        [
+            [76, -18], [82, -25], [83, -40], [78, -68], [70, -54], [60, -44],
+            [65, -38], [70, -22], [76, -18]
+        ]
+    ];
+
+    // Internal continental grid tessellations for high-tech cyber mesh
+    const CYBER_MESH_LINES = [
+        // Africa internal
+        [[20, -10], [10, 10], [0, 25], [-15, 25], [-25, 28]],
+        [[30, 0], [15, 20], [5, 35]],
+        // Europe internal
+        [[45, 0], [50, 15], [55, 30]],
+        [[40, 10], [48, 18], [58, 22]],
+        // Asia internal
+        [[30, 50], [35, 75], [30, 105], [20, 110]],
+        [[50, 60], [55, 90], [50, 120]],
+        [[60, 70], [62, 100], [60, 130]],
+        // North America internal
+        [[60, -120], [50, -100], [40, -85]],
+        [[45, -115], [38, -95], [32, -82]],
+        [[52, -110], [42, -90], [36, -78]],
+        // South America internal
+        [[5, -65], [-10, -55], [-25, -50]],
+        [[-5, -70], [-20, -60], [-35, -65]],
+        // Australia internal
+        [[-20, 125], [-25, 135], [-30, 142]],
+        [[-25, 120], [-28, 132], [-32, 140]]
+    ];
+
+    // Defined 3D Global Nodes at real geographic locations
     const nodes = [
-        { lat: 0.65, lon: -1.3, label: 'Local SOC', color: '#00dcff' },     // Local Host
-        { lat: 0.72, lon: -2.1, label: 'US-West Gateway', color: '#1d6dff' },// Gateway 1
-        { lat: 0.70, lon: -1.25, label: 'US-East DNS', color: '#10b981' },   // Gateway 2
-        { lat: 0.90, lon: 0.2, label: 'EU-North Core', color: '#1d6dff' },   // Gateway 3
-        { lat: 0.85, lon: 0.4, label: 'Frankfurt Hub', color: '#00dcff' },   // Gateway 4
-        { lat: 0.50, lon: 1.35, label: 'APAC-Tokyo', color: '#f59e0b' },     // Gateway 5
-        { lat: 0.22, lon: 1.8, label: 'Singapore Edge', color: '#10b981' },  // Gateway 6
-        { lat: -0.58, lon: 2.6, label: 'Sydney Cloud', color: '#00dcff' },   // Gateway 7
-        { lat: -0.40, lon: -0.8, label: 'SA-SaoPaulo', color: '#ec4899' }    // Gateway 8
+        { lat: 0.65, lon: -1.3, label: 'Local SOC', color: '#00dcff' },     // Local Host (East US)
+        { lat: 0.72, lon: -2.1, label: 'US-West Gateway', color: '#1d6dff' },// West US
+        { lat: 0.90, lon: 0.0, label: 'London Core', color: '#10b981' },    // London
+        { lat: 0.87, lon: 0.15, label: 'Frankfurt Hub', color: '#00dcff' },  // Frankfurt
+        { lat: 0.62, lon: 2.44, label: 'Tokyo APAC', color: '#f59e0b' },     // Tokyo
+        { lat: 0.02, lon: 1.81, label: 'Singapore Edge', color: '#10b981' }, // Singapore
+        { lat: -0.59, lon: 2.64, label: 'Sydney Cloud', color: '#00dcff' },  // Sydney
+        { lat: -0.41, lon: -0.81, label: 'SA-SaoPaulo', color: '#ec4899' },  // Sao Paulo
+        { lat: 0.49, lon: 1.35, label: 'India Gate', color: '#38bdf8' }      // India
     ];
 
     function latLonTo3D(lat, lon, r) {
@@ -98,6 +186,12 @@ let globeArcs = [];
             y: -r * Math.sin(lat),
             z: r * Math.cos(lat) * Math.cos(lon)
         };
+    }
+
+    function degTo3D(latDeg, lonDeg, r) {
+        const lat = (latDeg * Math.PI) / 180;
+        const lon = (lonDeg * Math.PI) / 180;
+        return latLonTo3D(lat, lon, r);
     }
 
     function project3D(p3, rx, ry, cx, cy) {
@@ -137,7 +231,7 @@ let globeArcs = [];
             from: nodes[fromIdx],
             to: nodes[toIdx],
             progress: 0,
-            speed: 0.02 + Math.random() * 0.025,
+            speed: 0.018 + Math.random() * 0.024,
             color: arcColor
         });
 
@@ -152,52 +246,120 @@ let globeArcs = [];
 
         rotY += autoRotSpeed;
 
-        const grad = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 1.15);
-        grad.addColorStop(0, 'rgba(0, 220, 255, 0.08)');
-        grad.addColorStop(0.7, 'rgba(29, 109, 255, 0.04)');
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad;
+        // 1. Atmospheric Outer Electric Blue Rim Glow
+        const atmosGrad = ctx.createRadialGradient(cx, cy, R * 0.75, cx, cy, R * 1.32);
+        atmosGrad.addColorStop(0, 'rgba(0, 220, 255, 0.14)');
+        atmosGrad.addColorStop(0.65, 'rgba(29, 109, 255, 0.08)');
+        atmosGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = atmosGrad;
         ctx.beginPath();
-        ctx.arc(cx, cy, R * 1.15, 0, Math.PI * 2);
+        ctx.arc(cx, cy, R * 1.32, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.lineWidth = 0.75;
-        const latSteps = [-1.1, -0.7, -0.35, 0, 0.35, 0.7, 1.1];
+        // 2. Dark Cyber Ocean Globe Sphere
+        const oceanGrad = ctx.createRadialGradient(cx - R * 0.25, cy - R * 0.25, R * 0.1, cx, cy, R);
+        oceanGrad.addColorStop(0, 'rgba(3, 14, 38, 0.95)');
+        oceanGrad.addColorStop(0.8, 'rgba(2, 8, 22, 0.98)');
+        oceanGrad.addColorStop(1, 'rgba(0, 180, 255, 0.35)');
+        ctx.fillStyle = oceanGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Globe sphere outer rim stroke
+        ctx.strokeStyle = 'rgba(0, 220, 255, 0.45)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // 3. Subtle Latitude & Longitude Graticule Lines (Electric Blue)
+        ctx.lineWidth = 0.6;
+        const latSteps = [-1.05, -0.7, -0.35, 0, 0.35, 0.7, 1.05];
         latSteps.forEach(lat => {
             ctx.beginPath();
             let first = true;
             for (let lon = 0; lon <= Math.PI * 2 + 0.1; lon += 0.2) {
                 const p3 = latLonTo3D(lat, lon, R);
                 const proj = project3D(p3, rotX, rotY, cx, cy);
-                if (proj.z > 0) {
-                    ctx.strokeStyle = `rgba(0, 220, 255, ${0.08 + (proj.z / R) * 0.12})`;
+                if (proj.z > -R * 0.1) {
+                    ctx.strokeStyle = `rgba(0, 220, 255, ${0.05 + (proj.z / R) * 0.08})`;
+                    if (first) { ctx.moveTo(proj.x, proj.y); first = false; }
+                    else ctx.lineTo(proj.x, proj.y);
                 } else {
-                    ctx.strokeStyle = 'rgba(0, 220, 255, 0.03)';
+                    first = true;
                 }
-                if (first) { ctx.moveTo(proj.x, proj.y); first = false; }
-                else ctx.lineTo(proj.x, proj.y);
             }
             ctx.stroke();
         });
 
-        for (let m = 0; m < 8; m++) {
-            const lon = (m / 8) * Math.PI * 2;
+        // 4. Draw Realistic Continents in Glowing Electric Blue
+        ctx.save();
+        // Clip to globe sphere so coastlines never bleed outside
+        ctx.beginPath();
+        ctx.arc(cx, cy, R - 0.5, 0, Math.PI * 2);
+        ctx.clip();
+
+        CONTINENTS.forEach(continent => {
             ctx.beginPath();
             let first = true;
-            for (let lat = -Math.PI/2; lat <= Math.PI/2 + 0.1; lat += 0.15) {
-                const p3 = latLonTo3D(lat, lon, R);
+            let visibleCount = 0;
+
+            continent.forEach(([latDeg, lonDeg]) => {
+                const p3 = degTo3D(latDeg, lonDeg, R);
+                const proj = project3D(p3, rotX, rotY, cx, cy);
+                if (proj.z > -R * 0.15) {
+                    visibleCount++;
+                    if (first) {
+                        ctx.moveTo(proj.x, proj.y);
+                        first = false;
+                    } else {
+                        ctx.lineTo(proj.x, proj.y);
+                    }
+                } else {
+                    first = true;
+                }
+            });
+
+            if (visibleCount > 2) {
+                // Glow & Stroke for continent coastlines
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(0, 180, 255, 0.12)';
+                ctx.fill();
+
+                ctx.strokeStyle = 'rgba(0, 220, 255, 0.85)';
+                ctx.lineWidth = 1.3;
+                ctx.shadowColor = '#00dcff';
+                ctx.shadowBlur = 5;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        });
+
+        // 5. Draw Cyber-Mesh Internal Lines across continents
+        CYBER_MESH_LINES.forEach(line => {
+            ctx.beginPath();
+            let first = true;
+            let count = 0;
+            line.forEach(([latDeg, lonDeg]) => {
+                const p3 = degTo3D(latDeg, lonDeg, R);
                 const proj = project3D(p3, rotX, rotY, cx, cy);
                 if (proj.z > 0) {
-                    ctx.strokeStyle = `rgba(0, 220, 255, ${0.08 + (proj.z / R) * 0.12})`;
+                    count++;
+                    if (first) { ctx.moveTo(proj.x, proj.y); first = false; }
+                    else ctx.lineTo(proj.x, proj.y);
                 } else {
-                    ctx.strokeStyle = 'rgba(0, 220, 255, 0.03)';
+                    first = true;
                 }
-                if (first) { ctx.moveTo(proj.x, proj.y); first = false; }
-                else ctx.lineTo(proj.x, proj.y);
+            });
+            if (count > 1) {
+                ctx.strokeStyle = 'rgba(0, 220, 255, 0.35)';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
             }
-            ctx.stroke();
-        }
+        });
 
+        ctx.restore();
+
+        // 6. Draw 3D Ballistic Network Traffic Arcs (Previous Animation Preserved)
         for (let i = globeArcs.length - 1; i >= 0; i--) {
             const arc = globeArcs[i];
             arc.progress += arc.speed;
@@ -209,7 +371,7 @@ let globeArcs = [];
             const midY = (p1.y + p2.y) * 0.5;
             const midZ = (p1.z + p2.z) * 0.5;
             const midLen = Math.hypot(midX, midY, midZ) || 1;
-            const arcHeight = R * 1.35;
+            const arcHeight = R * 1.36;
             const elevatedMid = {
                 x: (midX / midLen) * arcHeight,
                 y: (midY / midLen) * arcHeight,
@@ -227,20 +389,22 @@ let globeArcs = [];
             const projCurr = project3D(curr3D, rotX, rotY, cx, cy);
 
             if (projCurr.z > -R * 0.4) {
+                // Moving particle spark
                 ctx.beginPath();
-                ctx.arc(projCurr.x, projCurr.y, 2.5 * projCurr.scale, 0, Math.PI * 2);
+                ctx.arc(projCurr.x, projCurr.y, 2.6 * projCurr.scale, 0, Math.PI * 2);
                 ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = arc.color;
                 ctx.shadowBlur = 8;
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
+                // Glowing arc path
                 const projStart = project3D(p1, rotX, rotY, cx, cy);
                 ctx.beginPath();
                 ctx.moveTo(projStart.x, projStart.y);
                 ctx.lineTo(projCurr.x, projCurr.y);
                 ctx.strokeStyle = arc.color;
-                ctx.lineWidth = 1.2 * projCurr.scale;
+                ctx.lineWidth = 1.3 * projCurr.scale;
                 ctx.stroke();
             }
 
@@ -249,24 +413,27 @@ let globeArcs = [];
             }
         }
 
+        // 7. Draw Global Network City Nodes
         nodes.forEach(node => {
             const p3 = latLonTo3D(node.lat, node.lon, R);
             const proj = project3D(p3, rotX, rotY, cx, cy);
 
-            if (proj.z > -R * 0.3) {
-                const alpha = Math.max(0.2, (proj.z + R) / (2 * R));
+            if (proj.z > -R * 0.25) {
+                const alpha = Math.max(0.25, (proj.z + R) / (2 * R));
+                // Center point
                 ctx.beginPath();
-                ctx.arc(proj.x, proj.y, 3 * proj.scale, 0, Math.PI * 2);
+                ctx.arc(proj.x, proj.y, 3.2 * proj.scale, 0, Math.PI * 2);
                 ctx.fillStyle = node.color;
                 ctx.shadowColor = node.color;
-                ctx.shadowBlur = 6;
+                ctx.shadowBlur = 8;
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
+                // Pulsing outer ripple ring
                 ctx.beginPath();
-                ctx.arc(proj.x, proj.y, 5.5 * proj.scale, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.6})`;
-                ctx.lineWidth = 0.8;
+                ctx.arc(proj.x, proj.y, 6.2 * proj.scale, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(0, 220, 255, ${alpha * 0.8})`;
+                ctx.lineWidth = 0.9;
                 ctx.stroke();
             }
         });
@@ -760,7 +927,7 @@ function renderAlerts() {
                 <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-700/50">
                     <span>${alt.attacker_ip} &rarr; ${alt.target_ip}</span>
                     ${isBlocked 
-                        ? `<span class="text-emerald-400 font-bold">🛑 ISOLATED</span>`
+                        ? `<span class="text-emerald-400 font-bold">ISOLATED</span>`
                         : `<button onclick="blockIP('${alt.attacker_ip}')" class="px-2 py-0.5 rounded bg-red-800 hover:bg-red-700 text-white font-bold transition">BLOCK IP</button>`
                     }
                 </div>
