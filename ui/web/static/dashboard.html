@@ -86,8 +86,18 @@
             <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center space-x-4">
                     <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 p-0.5 shadow-lg shadow-cyan-500/30">
-                        <div class="w-full h-full bg-[#030712] rounded-[10px] flex items-center justify-center text-cyan-400 font-bold text-lg">
-                            🛡️
+                        <div class="w-full h-full bg-[#030712] rounded-[10px] flex items-center justify-center p-1.5">
+                            <svg class="w-full h-full" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="headerShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#ffffff"/>
+                                        <stop offset="35%" stop-color="#00dcff"/>
+                                        <stop offset="100%" stop-color="#1d6dff"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M24 3L5 11V27C5 38.6 13.3 49.4 24 52C34.7 49.4 43 38.6 43 27V11L24 3Z" fill="url(#headerShieldGrad)" fill-opacity="0.22" stroke="url(#headerShieldGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+                                <path d="M17 27L22 32L31 22" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                     </div>
                     <div>
@@ -102,28 +112,28 @@
                     </div>
                 </div>
 
-                <!-- Navigation Tabs with HOME Button -->
-                <div class="flex items-center gap-1.5 bg-black/60 p-1 rounded-xl border border-cyan-500/25 backdrop-blur-md overflow-x-auto text-xs font-mono">
-                    <a href="index.html" id="btn-nav-home" class="px-3 py-1.5 rounded-lg font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-1.5 border border-transparent hover:border-cyan-500/30" title="Return to Landing Page">
-                        <span>🏠</span> HOME
+                <!-- Navigation Tabs with HOME Button (Strictly Horizontal Single-Line) -->
+                <div class="flex items-center gap-1 sm:gap-1.5 bg-black/60 p-1 rounded-xl border border-cyan-500/25 backdrop-blur-md overflow-x-auto text-xs font-mono whitespace-nowrap">
+                    <a href="index.html" id="btn-nav-home" class="px-3 py-1.5 rounded-lg font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center border border-transparent hover:border-cyan-500/30 whitespace-nowrap flex-shrink-0" title="Return to Landing Page">
+                        HOME
                     </a>
-                    <button onclick="switchTab('hud')" id="tab-hud" class="px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-black shadow-md transition">
-                        📊 HUD
+                    <button onclick="switchTab('hud')" id="tab-hud" class="px-3 py-1.5 rounded-lg font-bold bg-cyan-500 text-black shadow-md transition whitespace-nowrap flex-shrink-0">
+                        HUD
                     </button>
-                    <button onclick="switchTab('threats')" id="tab-threats" class="px-3 py-1.5 rounded-lg font-bold text-red-400 hover:bg-slate-800/80 transition flex items-center gap-1">
-                        🚨 THREATS <span id="navThreatBadge" class="px-1.5 py-0.2 rounded bg-red-950 text-[10px] border border-red-800">0</span>
+                    <button onclick="switchTab('threats')" id="tab-threats" class="px-3 py-1.5 rounded-lg font-bold text-red-400 hover:bg-slate-800/80 transition flex items-center gap-1 whitespace-nowrap flex-shrink-0">
+                        THREATS <span id="navThreatBadge" class="px-1.5 py-0.2 rounded bg-red-950 text-[10px] border border-red-800">0</span>
                     </button>
-                    <button onclick="switchTab('talkers')" id="tab-talkers" class="px-3 py-1.5 rounded-lg font-bold text-yellow-400 hover:bg-slate-800/80 transition">
-                        📈 TALKERS
+                    <button onclick="switchTab('talkers')" id="tab-talkers" class="px-3 py-1.5 rounded-lg font-bold text-yellow-400 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                        TALKERS
                     </button>
-                    <button onclick="switchTab('sockets')" id="tab-sockets" class="px-3 py-1.5 rounded-lg font-bold text-cyan-300 hover:bg-slate-800/80 transition">
-                        💻 PS / SOCKETS
+                    <button onclick="switchTab('sockets')" id="tab-sockets" class="px-3 py-1.5 rounded-lg font-bold text-cyan-300 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                        PS / SOCKETS
                     </button>
-                    <button onclick="switchTab('hosts')" id="tab-hosts" class="px-3 py-1.5 rounded-lg font-bold text-emerald-400 hover:bg-slate-800/80 transition">
-                        📡 LAN RADAR
+                    <button onclick="switchTab('hosts')" id="tab-hosts" class="px-3 py-1.5 rounded-lg font-bold text-emerald-400 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                        LAN RADAR
                     </button>
-                    <button onclick="switchTab('manual')" id="tab-manual" class="px-3 py-1.5 rounded-lg font-bold text-purple-400 hover:bg-slate-800/80 transition">
-                        📖 MANUAL
+                    <button onclick="switchTab('manual')" id="tab-manual" class="px-3 py-1.5 rounded-lg font-bold text-purple-400 hover:bg-slate-800/80 transition whitespace-nowrap flex-shrink-0">
+                        MANUAL
                     </button>
                 </div>
 
@@ -140,7 +150,7 @@
                         <span id="wsText" class="text-emerald-400 font-bold">● LIVE</span>
                     </div>
                     <a href="#" onclick="alert('PDF Forensic Report generation requires local Python engine (python run_web.py). Demo report preview available in Local SOC mode.'); return false;" target="_blank" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-mono font-bold shadow-md shadow-cyan-500/20 transition flex items-center gap-1">
-                        <span>📑</span> PDF Report
+                        PDF Report
                     </a>
                 </div>
             </div>
@@ -230,7 +240,7 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="text-slate-400 font-bold">🎯 Test Threat Simulators:</span>
+                        <span class="text-slate-400 font-bold">Test Threat Simulators:</span>
                         <button onclick="simulateAttack('port_scan')" class="px-2.5 py-1 rounded bg-red-950/80 border border-red-500/40 text-red-300 hover:bg-red-900 transition">
                             Port Scan
                         </button>
@@ -299,13 +309,13 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                <span class="text-red-400">🚨</span> CyberShield NIDS Threat Center & Active Defense
+                                 CyberShield NIDS Threat Center & Active Defense
                             </h2>
                             <p class="text-xs text-slate-400 mt-1">Sliding-window heuristic anomaly triggers with automated and manual firewall isolation.</p>
                         </div>
                         <div class="flex items-center gap-3">
                             <button onclick="simulateAttack('port_scan')" class="px-3.5 py-1.5 rounded-lg bg-red-900/80 hover:bg-red-800 text-white text-xs font-mono font-bold transition">
-                                💥 Trigger Test Attack
+                                Trigger Test Attack
                             </button>
                         </div>
                     </div>
@@ -324,7 +334,7 @@
                     <div class="flex items-center justify-between border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                <span class="text-yellow-400">📈</span> Top Talker Endpoints & Bandwidth Consumers
+                                 Top Talker Endpoints & Bandwidth Consumers
                             </h2>
                             <p class="text-xs text-slate-400 mt-1">Real-time ranking of communicating host IPs by packet volume and bandwidth consumption.</p>
                         </div>
@@ -356,7 +366,7 @@
                     <div class="flex items-center justify-between border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                <span class="text-cyan-400">💻</span> System Process Sockets Inspector (psutil)
+                                 System Process Sockets Inspector (psutil)
                             </h2>
                             <p class="text-xs text-slate-400 mt-1">Active TCP/UDP sockets mapped to native OS process names and PIDs with zero subprocess lag.</p>
                         </div>
@@ -388,13 +398,13 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                <span class="text-emerald-400">📡</span> Local Subnet ARP Radar (LAN Discovery)
+                                 Local Subnet ARP Radar (LAN Discovery)
                             </h2>
                             <p class="text-xs text-slate-400 mt-1">Auto-discovered devices on local subnet <strong class="text-emerald-400"><span id="netSubnet">192.168.1.0/24</span></strong>.</p>
                         </div>
                         <button onclick="scanLocalSubnet()" id="btnSubnetScan" class="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-mono font-bold shadow-lg shadow-cyan-500/25 transition active:scale-95 flex items-center gap-2">
-                            <span id="scanSpin" class="hidden animate-spin">🌀</span>
-                            <span>🚀 SCAN LOCAL SUBNET NOW</span>
+                            <span id="scanSpin" class="hidden animate-spin inline-block w-2.5 h-2.5 rounded-full border-2 border-emerald-400 border-t-transparent"></span>
+                            <span>SCAN LOCAL SUBNET NOW</span>
                         </button>
                     </div>
 
@@ -427,14 +437,14 @@
                 <div class="glass-panel p-6 rounded-2xl space-y-6">
                     <div class="border-b border-cyan-500/20 pb-4">
                         <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                            <span class="text-purple-400">📖</span> CyberShield SOC Architecture & Operations Manual
+                             CyberShield SOC Architecture & Operations Manual
                         </h2>
                         <p class="text-xs text-slate-400 mt-1">Complete command and operational reference guide for real-time traffic analysis and intrusion response.</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-mono">
                         <div class="p-4 rounded-xl bg-black/50 border border-cyan-500/30 space-y-2">
-                            <h3 class="font-bold text-cyan-300 text-sm">🎯 Core SOC Terminal Commands</h3>
+                            <h3 class="font-bold text-cyan-300 text-sm">Core SOC Terminal Commands</h3>
                             <ul class="space-y-1 text-slate-300">
                                 <li><strong class="text-yellow-400">threats / alerts</strong> - Open full-screen Threat Defense Center</li>
                                 <li><strong class="text-yellow-400">talkers</strong> - Open Top Communicating Endpoints table</li>
@@ -447,7 +457,7 @@
                         </div>
 
                         <div class="p-4 rounded-xl bg-black/50 border border-cyan-500/30 space-y-2">
-                            <h3 class="font-bold text-emerald-300 text-sm">🛡️ Threat Detection Heuristics</h3>
+                            <h3 class="font-bold text-emerald-300 text-sm">Threat Detection Heuristics</h3>
                             <ul class="space-y-1 text-slate-300">
                                 <li><strong class="text-cyan-300">Port Scan:</strong> >15 unique ports probed in 3 seconds</li>
                                 <li><strong class="text-cyan-300">SYN Flood:</strong> >30 raw SYN bursts without ACK response</li>
@@ -466,7 +476,7 @@
             <div class="glass-panel max-w-2xl w-full p-6 rounded-2xl space-y-4 shadow-2xl border-cyan-500/40">
                 <div class="flex items-center justify-between border-b border-cyan-500/20 pb-3">
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                        <span>🔬</span> Deep Packet Hex Inspector
+                        Deep Packet Hex Inspector
                     </h3>
                     <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
                 </div>
